@@ -11,14 +11,17 @@ api_key = os.getenv("OPENAI_API_KEY")
 
 client = OpenAI(api_key=api_key)
 
-chate_response = client.chat.completions.create(
-    model="gpt-4",
-    messages=[
-        {
-            "role": "system",
-            "content": "You are a helpful assistant."
-        }
-    ],
-)
+while True:
+    print("You:")
+    question = input()
+    chat_response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {
+                "role": "user",
+                "content": question
+            }
+        ],
+    )
+    print("GPT:" + chat_response.choices[0].message.content)
 
-print(chate_response.choices[0].message.content)

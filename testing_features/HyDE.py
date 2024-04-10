@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 # some settings
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
-Settings.llm = OpenAI(model="gpt-4", api_key=api_key)
+Settings.llm = OpenAI(model="gpt-3.5", api_key=api_key)
 
 # load documents and build index and query engine
 documents = SimpleDirectoryReader("./data").load_data()
