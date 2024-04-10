@@ -4,3 +4,6 @@
 .env
 /.idea
 /webcrawl_data/
+/index_storage/
+/elastic_persistent_dir/
+/testing_features/chromadb_storage/
