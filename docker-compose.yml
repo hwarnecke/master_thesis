@@ -1,8 +1,8 @@
-version: '2.2'
+#version: '2.2'
 services:
-  es01:
+  buergerforen:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
-    container_name: elastic_test
+    container_name: elastic_buergerforen
     environment:
       #- node.name=es01
       #- cluster.name=es-docker-cluster
@@ -19,7 +19,7 @@ services:
         soft: -1
         hard: -1
     volumes:
-      - /media/singularity/Dokumente/Studentenfutter/CogntiveScience/MasterThesis/Code/master_thesis/elastic_persistent_dir:/usr/share/elasticsearch/data
+      - /media/singularity/Dokumente/Studentenfutter/CogntiveScience/MasterThesis/Code/master_thesis/elastic_persistent_dir/buergerforen:/usr/share/elasticsearch/data
     ports:
       - 9200:9200
     networks:
