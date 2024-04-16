@@ -13,7 +13,7 @@ load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 Settings.llm = OpenAI(model="gpt-3.5-turbo", api_key=api_key)
 
-documents = SimpleDirectoryReader("./data").load_data()
+documents = SimpleDirectoryReader("../data").load_data()
 
 # the BM25Retriever does not operate on the VectorStoreIndex, so we need to create nodes instead
 splitter = SentenceSplitter(chunk_size=1024)

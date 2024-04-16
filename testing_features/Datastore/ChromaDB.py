@@ -21,7 +21,7 @@ api_key = os.getenv("OPENAI_API_KEY")
 Settings.llm = OpenAI(model="gpt-4", api_key=api_key)
 
 # path to store the chromadb
-persist_dir = "./chromadb_storage"
+persist_dir = "../chromadb_storage"
 
 # this part stays the same, independent of whether the chromadb is already saved or not
 db = chromadb.PersistentClient(path=persist_dir)
@@ -38,7 +38,7 @@ if already_indexed:
         vector_store, storage_context=storage_context
     )
 else:
-    documents = SimpleDirectoryReader("./data").load_data()
+    documents = SimpleDirectoryReader("../data").load_data()
     index = VectorStoreIndex.from_documents(documents, storage_context=storage_context, show_progress=True)
 
 # create the query engine

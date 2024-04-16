@@ -14,7 +14,7 @@ api_key = os.getenv("OPENAI_API_KEY")
 Settings.llm = OpenAI(model="gpt-3.5", api_key=api_key)
 
 # load documents and build index and query engine
-documents = SimpleDirectoryReader("./data").load_data()
+documents = SimpleDirectoryReader("../data").load_data()
 index = VectorStoreIndex.from_documents(documents, show_progress=True)
 query_engine = index.as_query_engine()
 

@@ -28,7 +28,7 @@ token_counter = TokenCountingHandler(
 # add the token counter to the callback manager
 Settings.callback_manager = CallbackManager([token_counter])
 
-documents = SimpleDirectoryReader("./data").load_data()
+documents = SimpleDirectoryReader("../data").load_data()
 
 index = VectorStoreIndex.from_documents(documents, show_progress=True)
 

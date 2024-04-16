@@ -18,7 +18,7 @@ The whole script is a test of features, later this needs to be put into a separa
 
 # most metadata is stored in the title of the pdf
 # so we need a list of all the pdfs in order to extract the metadata
-start_path = "../data/Buergerforen"
+start_path = "../../data/Buergerforen"
 disctricts = os.listdir(start_path)
 
 

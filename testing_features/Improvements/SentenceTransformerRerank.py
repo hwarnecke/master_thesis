@@ -13,7 +13,7 @@ api_key = os.getenv("OPENAI_API_KEY")
 Settings.llm = OpenAI(model="gpt-3.5-turbo", api_key=api_key)
 
 documents = SimpleDirectoryReader(
-    "data"
+    "../data"
 ).load_data()
 
 index = VectorStoreIndex.from_documents(documents, show_progress=True)
