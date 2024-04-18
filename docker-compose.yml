@@ -25,6 +25,31 @@ services:
     networks:
       - elastic
 
+  city_services:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
+    container_name: elastic_city_services
+    environment:
+      #- node.name=es01
+      #- cluster.name=es-docker-cluster
+      #- discovery.seed_hosts=es02,es03
+      #- cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - xpack.license.self_generated.type=trial
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - /media/singularity/Dokumente/Studentenfutter/CogntiveScience/MasterThesis/Code/master_thesis/elastic_persistent_dir/city_services:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - elastic
+
 networks:
   elastic:
     driver: bridge
