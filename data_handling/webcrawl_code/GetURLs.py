@@ -2,6 +2,9 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlsplit
 
+"""
+old, slow and deprecated code for getting all links from a website
+"""
 
 def get_on_site_links(url, ignore=[]):
     """

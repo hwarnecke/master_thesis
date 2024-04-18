@@ -9,6 +9,7 @@ class WebCrawler:
     Can be used to crawl a website and it's subpoges for data to fill a vector store with.
     Will create a VectorStoreIndex from the data and save it to a directory.
     Default is the service.osnabrueck.de website.
+    Old and very slow code, not used in the current version of the project.
     """
 
     @staticmethod
