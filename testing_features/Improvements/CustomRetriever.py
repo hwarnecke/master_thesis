@@ -1,6 +1,4 @@
 from llama_index.core.retrievers import BaseRetriever
-from llama_index.core.schema import NodeWithScore
-from typing import List
 
 class CustomRetriever(BaseRetriever):
     """
