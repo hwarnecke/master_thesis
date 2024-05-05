@@ -3,7 +3,6 @@ import os
 from dotenv import load_dotenv
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 from llama_index.core import Settings, StorageContext
-from llama_index.core.retrievers import BaseRetriever
 from llama_index.retrievers.bm25 import BM25Retriever
 from llama_index.core.node_parser import SentenceSplitter
 

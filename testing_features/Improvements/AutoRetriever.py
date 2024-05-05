@@ -10,12 +10,13 @@ from dotenv import load_dotenv
 from io import StringIO
 import sys
 
-from llama_index.core import Settings
+from llama_index.core import Settings, get_response_synthesizer
 from llama_index.llms.openai import OpenAI
 from llama_index.core import VectorStoreIndex, StorageContext
 from llama_index.vector_stores.elasticsearch import ElasticsearchStore
 from llama_index.core.retrievers import VectorIndexAutoRetriever
 from llama_index.core.vector_stores import MetadataInfo, VectorStoreInfo
+from llama_index.core.query_engine import RetrieverQueryEngine
 
 # some settings
 load_dotenv()
@@ -107,7 +108,6 @@ sys.stdout = old_stdout
 
 print(filter_info.getvalue())
 
-
 """
 While it does seem to work in principle, there is still some work to do.
 For once, the metadata is rarely used for simple questions. It seems like I have to actively ask in a way that names
@@ -121,3 +121,14 @@ In order to be truly useful the LLM should be capable of matching the metadata b
 In order to store the information about what filters where used I need to remap the stdout to a string.
 """
 
+
+# the verbose output from the retriever can still be catched when used in a query engine
+response_synthesizer = get_response_synthesizer()
+
+query_engine = RetrieverQueryEngine(
+    retriever=auto_retriever,
+    response_synthesizer=response_synthesizer,
+)
+
+question = "Welche Dienstleistungen bietet die Stadt Osnabrück an?"
+response = query_engine.query(question)
