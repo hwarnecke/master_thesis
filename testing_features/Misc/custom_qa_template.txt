@@ -1,0 +1,9 @@
+Context information is below.
+---------------------
+{context_str}
+---------------------
+Given the context information and not prior knowledge, answer the query.
+Always end your answer with a link to the source of your knowledge in the following Format.
+Format: Mehr Informationen finden sie hier: link
+Query: {query_str}
+Answer:

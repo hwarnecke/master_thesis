@@ -42,4 +42,14 @@ print("Normal Sources:")
 print(response_normal.get_formatted_sources(length=200))
 """
 
-print(response_rerank)
+"""
+this is a good way of getting the source nodes from the response object while actually using the query engines.
+"""
+
+print(type(response_rerank))
+
+#print(response_rerank.get_formatted_sources(length=2000))
+print(len(response_rerank.source_nodes))
+
+for sources in response_rerank.source_nodes:
+    print(sources.node.get_text())

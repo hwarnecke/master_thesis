@@ -102,6 +102,14 @@ class DataLogging:
         Returns the log of the given type.
         :param log_type: String - the type
         :return: String or List of String - the log value
+
+        Possible log types are:
+        - query
+        - response
+        - evaluation_scores
+        - time_scores
+        - tokens
+        - retrieved_nodes
         """
         if log_type == "query":
             return self.query
