@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+import datetime
 from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.core import Settings, get_response_synthesizer, VectorStoreIndex, StorageContext
 from llama_index.llms.openai import OpenAI
@@ -13,7 +14,6 @@ from llama_index.core.query_engine import TransformQueryEngine
 
 from CombinedRetriever import CombinedRetriever
 from FusionRetriever import FusionRetriever
-
 
 def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_service_store", rerank_top_n = 3, retriever_top_k = 6):
 
@@ -52,6 +52,44 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
 
     response_synthesizer = get_response_synthesizer()
 
+    """
+    Each model will get a unique ID, so I can later identify which model was used in what configuration.
+    this includes the following:
+    1. name of the method used
+        - base
+        - rerank
+        - hybrid
+        - auto
+        - hyde
+        - fusion
+        
+    2. the LLM used
+        - gpt3 for gpt-3.5-turbo
+        - gpt4 for gpt-4-turbo
+        - if local models are later added, I'll add a description here
+        
+    3. the embedding used
+        - default if no special embedding is used
+        - if a special embedding is used, I'll add a description here
+        
+    4. a timestamp to make sure that the ID is unique over multiple runs
+    """
+
+    # the llm used
+    llm_id = "llm"
+    if llm == "gpt-3.5-turbo":
+        llm_id = "gpt3"
+    elif llm == "gpt-4-turbo":
+        llm_id = "gpt4"
+
+    # the embedding used
+    embedding_id = "default"
+
+    # the timestamp needs to be formatted in order to allow it as a file name
+    current_time = datetime.datetime.now()
+    timestamp = current_time.strftime('%Y-%m-%d_%H-%M-%S')
+
+
     query_engines = {}
 
     """
@@ -64,11 +102,19 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
 
     query_base = index.as_query_engine(similarity_top_k=rerank_top_n)
 
+    name_id = "base"
+    retriever_id = f"{name_id}_{llm_id}_{embedding_id}_{timestamp}"
+    query_engines[retriever_id] = query_base
+
     """
     2. the base query engine with the reranker
     """
 
     query_rerank = index.as_query_engine(similarity_top_k=retriever_top_k, node_postprocessors=[reranker])
+
+    name_id = "rerank"
+    retriever_id = f"{name_id}_{llm_id}_{embedding_id}_{timestamp}"
+    query_engines[retriever_id] = query_rerank
 
     """
     3. the hybrid query engine with the basic retriever and the bm25 retriever
@@ -82,6 +128,10 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
         response_synthesizer=response_synthesizer,
         node_postprocessors=[reranker],
     )
+
+    name_id = "hybrid"
+    retriever_id = f"{name_id}_{llm_id}_{embedding_id}_{timestamp}"
+    query_engines[retriever_id] = query_hybrid
 
     """
     4. AutoRetriever
@@ -161,6 +211,10 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
         node_postprocessors=[reranker],
     )
 
+    name_id = "auto"
+    retriever_id = f"{name_id}_{llm_id}_{embedding_id}_{timestamp}"
+    query_engines[retriever_id] = query_auto
+
     """
     5. HyDE (Hybrid Document Embedding)
     
@@ -192,6 +246,12 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
         response_synthesizer=response_synthesizer,
         node_postprocessors=[reranker],
     )
+
+    name_id = "fusion"
+    retriever_id = f"{name_id}_{llm_id}_{embedding_id}_{timestamp}"
+    query_engines[retriever_id] = query_fusion
+
+    return query_engines
 
 
 
