@@ -236,6 +236,8 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
 
     """
     6. RAG Fusion
+    
+    Similar to the AutoRetriever, the stdout needs to be redirected in order to catch the verbose output.
     """
 
     # TODO: check again how the paper implemented this

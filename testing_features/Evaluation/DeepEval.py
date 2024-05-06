@@ -45,11 +45,11 @@ toxicityEvaluator = DeepEvalToxicityEvaluator()
 
 
 # summarization Evaluator is probably not needed for my use case
-# bias Evaluator is probably also irrelevant but I am interested what it does to my use case
+# bias Evaluator is probably also irrelevant, but I am interested what it does to my use case
 # toxcicity Evaluator is  interesting but also not necessary for my use case
 # Note: when I tested the reranking approach I got two completely different answers to the question.
 #       but this one got perfect scores for the three main metrics. This shows that I should at best include a
-#       reference answer so I can also check if the answer is correct.
+#       reference answer, so I can also check if the answer is correct.
 #       It can very well be that answers are very good, in terms of context-answer relation but not correct because
 #       the context is wrong.
 
