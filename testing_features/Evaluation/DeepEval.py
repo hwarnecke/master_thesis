@@ -57,13 +57,21 @@ evaluators = {
     "answerRelevancyEvaluator": answerRelevancyEvaluator,
     "faithfulnessEvaluator": faithfulnessEvaluator,
     "contextualRelevancyEvaluator": contextualRelevancyEvaluator,
-    "summarizationEvaluator": summarizationEvaluator,
-    "biasEvaluator": biasEvaluator,
-    "toxicityEvaluator": toxicityEvaluator,
+    # "summarizationEvaluator": summarizationEvaluator,
+    # "biasEvaluator": biasEvaluator,
+    # "toxicityEvaluator": toxicityEvaluator,
 }
 
+results = []
 for evaluator in evaluators:
     print(evaluator)
     evaluation_result = evaluators[evaluator].evaluate_response(query=user_input, response=response_object)
-    print(evaluation_result)
+    #print(evaluation_result.score)
+    results.extend([evaluation_result.passing, evaluation_result.feedback, evaluation_result.score])
     print("\n")
+    name = str(evaluator)
+    print(type(name))
+    print(name)
+
+print(results)
+
