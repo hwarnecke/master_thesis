@@ -1,4 +1,4 @@
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, QueryBundle
 from llama_index.core.indices.query.query_transform.base import (
     HyDEQueryTransform,
 )
@@ -27,7 +27,7 @@ response = query_engine.query(query_str)
 print(response)
 
 # check what the LLM halucinated for the HyDE transform
-query_bundle = hyde(query_str)
+query_bundle: QueryBundle = hyde(query_str)
 hyde_doc = query_bundle.embedding_strs[0]
 print(hyde_doc)
 

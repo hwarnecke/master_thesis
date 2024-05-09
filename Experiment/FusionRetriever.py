@@ -15,11 +15,13 @@ class FusionRetriever(BaseRetriever):
     def __init__(self, retriever):
         self.retriever = retriever
         super().__init__()
+        self.generated_questions: list = []
+        self.mode: str = "OR"
 
-    def _remove_leading_numbers(self, s):
+    def _remove_leading_numbers(self, s) -> str:
         return re.sub(r'^\d+\.\s*', '', s)
 
-    def _generate_questions(self, question):
+    def _generate_questions(self, question) -> list:
         load_dotenv()
         api_key = os.getenv("OPENAI_API_KEY")
 
@@ -44,15 +46,15 @@ class FusionRetriever(BaseRetriever):
 
         return generated_questions
 
-    def _retrieve(self, query):
+    def _retrieve(self, query) -> list:
         """
-        retrieve nodes for each question in the list of questions
-        :param questions: list of questions
+        generate a list of questions from the given query and retrieve nodes for each of them
         :return: returns a list of nodes
         """
 
         # generate a list of questions
         questions = self._generate_questions(query)
+        self.generated_questions = questions
         questions.append(query)
 
         # collect all nodes from all retrievers
@@ -80,6 +82,6 @@ class FusionRetriever(BaseRetriever):
             combined_dict.update({n.node.node_id: n for n in node})
 
         # now we take all items from the combined dictionary that are in the retrieve_ids and put them in a list
-        retrieve_nodes = [combined_dict[node_id] for node_id in retrieve_ids]
+        retrieve_nodes: list = [combined_dict[node_id] for node_id in retrieve_ids]
 
         return retrieve_nodes

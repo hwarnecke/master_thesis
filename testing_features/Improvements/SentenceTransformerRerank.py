@@ -2,7 +2,7 @@
 # using the local HF Embedding as a CrossEncoder
 
 from llama_index.core.postprocessor import SentenceTransformerRerank
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, QueryBundle
 from llama_index.core import Settings
 from llama_index.llms.openai import OpenAI
 from dotenv import load_dotenv
@@ -24,6 +24,7 @@ reranker = SentenceTransformerRerank(
 )
 
 query_rerank = index.as_query_engine(similarity_top_k=10, node_postprocessors=[reranker], verbose=True)
+
 
 query_normal = index.as_query_engine(similarity_top_k=10)
 
@@ -53,3 +54,15 @@ print(len(response_rerank.source_nodes))
 
 for sources in response_rerank.source_nodes:
     print(sources.node.get_text())
+
+
+""" appearantly it can also be used as standalone"""
+print("\n\n")
+query_str = QueryBundle("Which grad schools did the author apply for and why?")
+retriever = index.as_retriever(similarity_top_k=5)
+nodes = retriever.retrieve(query_str)
+reranked_nodes = reranker.postprocess_nodes(nodes, query_str)
+
+print(len(nodes))
+print(len(reranked_nodes))
+
