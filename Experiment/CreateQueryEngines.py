@@ -1,7 +1,6 @@
 import os
 from dotenv import load_dotenv
 import datetime
-from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.core import Settings, get_response_synthesizer, VectorStoreIndex, StorageContext
 from llama_index.llms.openai import OpenAI
 from llama_index.vector_stores.elasticsearch import ElasticsearchStore
@@ -10,10 +9,10 @@ from llama_index.retrievers.bm25 import BM25Retriever
 from llama_index.core.retrievers import VectorIndexAutoRetriever
 from llama_index.core.vector_stores import MetadataInfo, VectorStoreInfo
 from llama_index.core.indices.query.query_transform.base import HyDEQueryTransform
-from llama_index.core.query_engine import TransformQueryEngine
 
 from CombinedRetriever import CombinedRetriever
 from FusionRetriever import FusionRetriever
+from CustomQueryEngine import ModifiedQueryEngine
 
 def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_service_store", rerank_top_n = 3, retriever_top_k = 6):
 
@@ -50,7 +49,9 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
         storage_context=storage_context,
         show_progress=False)
 
-    response_synthesizer = get_response_synthesizer()
+    basic_response_synthesizer = get_response_synthesizer()
+
+    basic_retriever = index.as_retriever(similarity_top_k=retriever_top_k)
 
     """
     Each model will get a unique ID, so I can later identify which model was used in what configuration.
@@ -89,7 +90,6 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
     current_time = datetime.datetime.now()
     timestamp = current_time.strftime('%Y-%m-%d_%H-%M-%S')
 
-
     query_engines = {}
 
     """
@@ -100,7 +100,7 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
     1. the base query engine without any modifications
     """
 
-    query_base = index.as_query_engine(similarity_top_k=rerank_top_n)
+    query_base = ModifiedQueryEngine(retriever=basic_retriever, response_synthesizer=basic_response_synthesizer)
 
     name_id = "base"
     retriever_id = f"{name_id}_{llm_id}_{embedding_id}_{timestamp}"
@@ -109,8 +109,9 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
     """
     2. the base query engine with the reranker
     """
-
-    query_rerank = index.as_query_engine(similarity_top_k=retriever_top_k, node_postprocessors=[reranker])
+    query_rerank = ModifiedQueryEngine(retriever=basic_retriever,
+                                     response_synthesizer=basic_response_synthesizer,
+                                     reranker=reranker)
 
     name_id = "rerank"
     retriever_id = f"{name_id}_{llm_id}_{embedding_id}_{timestamp}"
@@ -123,10 +124,10 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
     base = index.as_retriever(similarity_top_k=retriever_top_k)
     bm25 = BM25Retriever.from_defaults(index=index, similarity_top_k=retriever_top_k)
     hybrid_retriever = CombinedRetriever([base, bm25], mode="OR")
-    query_hybrid = RetrieverQueryEngine(
+    query_hybrid = ModifiedQueryEngine(
         retriever=hybrid_retriever,
-        response_synthesizer=response_synthesizer,
-        node_postprocessors=[reranker],
+        response_synthesizer=basic_response_synthesizer,
+        reranker=reranker,
     )
 
     name_id = "hybrid"
@@ -205,10 +206,10 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
         verbose=True,
     )
 
-    query_auto = RetrieverQueryEngine(
+    query_auto = ModifiedQueryEngine(
         retriever=auto_retriever,
-        response_synthesizer=response_synthesizer,
-        node_postprocessors=[reranker],
+        response_synthesizer=basic_response_synthesizer,
+        reranker=reranker,
     )
 
     name_id = "auto"
@@ -231,8 +232,12 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
     """
 
     hyde = HyDEQueryTransform(include_original=True)
-    query_engine = index.as_query_engine()
-    query_hyde = TransformQueryEngine(query_engine, query_transform=hyde)
+    query_engine = ModifiedQueryEngine(
+        retriever=basic_retriever,
+        response_synthesizer=basic_response_synthesizer,
+        reranker=reranker,
+        hyde=hyde
+    )
 
     """
     6. RAG Fusion
@@ -242,11 +247,11 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
 
     # TODO: check again how the paper implemented this
     base_retriever = index.as_retriever(similarity_top_k=5)
-    retriever = FusionRetriever(retriever=base_retriever)
-    query_fusion = RetrieverQueryEngine(
-        retriever=retriever,
-        response_synthesizer=response_synthesizer,
-        node_postprocessors=[reranker],
+    fusion_retriever = FusionRetriever(retriever=base_retriever)
+    query_fusion = ModifiedQueryEngine(
+        retriever=fusion_retriever,
+        response_synthesizer=basic_response_synthesizer,
+        reranker=reranker,
     )
 
     name_id = "fusion"

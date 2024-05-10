@@ -102,11 +102,17 @@ filter_info = StringIO()
 old_stdout = sys.stdout
 sys.stdout = filter_info
 
-auto_retriever.retrieve("Welche Dienstleistungen bietet die Stadt Osnabrück an?")
+auto_retriever.retrieve("Welche Dienstleistungen starten mit dem Anfangsbuchstaben A?")
 
 sys.stdout = old_stdout
 
-print(filter_info.getvalue())
+value = filter_info.getvalue()
+lines = value.split("\n")
+query_str = lines[0].split(": ")[1]
+filters = lines[1].split(": ")[1]
+
+print("Query: " + query_str)
+print("filter:" + filters)
 
 """
 While it does seem to work in principle, there is still some work to do.
@@ -123,12 +129,12 @@ In order to store the information about what filters where used I need to remap 
 
 
 # the verbose output from the retriever can still be catched when used in a query engine
-response_synthesizer = get_response_synthesizer()
-
-query_engine = RetrieverQueryEngine(
-    retriever=auto_retriever,
-    response_synthesizer=response_synthesizer,
-)
-
-question = "Welche Dienstleistungen bietet die Stadt Osnabrück an?"
-response = query_engine.query(question)
+# response_synthesizer = get_response_synthesizer()
+#
+# query_engine = RetrieverQueryEngine(
+#     retriever=auto_retriever,
+#     response_synthesizer=response_synthesizer,
+# )
+#
+# question = "Welche Dienstleistungen bietet die Stadt Osnabrück an?"
+# response = query_engine.query(question)

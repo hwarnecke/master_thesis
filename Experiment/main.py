@@ -73,28 +73,12 @@ for qe_id, qe in tqdm.tqdm(query_engines.items()):
         # create the data logging object
         path = "logs/" + qe_id + ".csv"
         data_logger = DataLogging(file_path=path)
-
-        # TODO: add special cases for the RAG Fusion, AutoRetriever and the HyDE
-        stdout_flag = False
-        if qe_id.contains("auto") or qe_id.contains("fusion"):
-            stdout_flag = True
-
-        if stdout_flag:
-            old_stdout = sys.stdout
-            filter_info = StringIO()
-            sys.stdout = filter_info
-
-
-
-        # currently I can only record the complete response time (search + generation)
-        # if I want a more granular approach, I need to create my own query engine
+        # TODO: create special data logger for the additional info
         query = question["question"]
-        start_time = time.time()
 
         response = qe.query(query)
 
-        end_time = time.time()
-        response_time = end_time - start_time
+
         correct_answer = question["answer"]
 
         # save the information in a dictionary
@@ -102,20 +86,19 @@ for qe_id, qe in tqdm.tqdm(query_engines.items()):
                 "query": query,
                 "response": response,
                 "correct_answer": correct_answer,
-                "response_time": response_time
+                "query_time": qe.query_time,
+                "generating_time": qe.generating_time,
+                "total_time": qe.total_time
                 }
 
-        # reset the standard output in order to not overwrite the content in the variable
-        if stdout_flag:
-            sys.stdout = old_stdout
-
-        """
-        # I should really consider creating a custom query engine...
-        # if not I need the transform object here to generate the hypothetical document...    
-        if qe_id.contains("hyde"):
-            query_bundle = hyde(query_str)
-            hyde_doc = query_bundle.embedding_strs[0]
-        """
+        # TODO: collect additional info and logg it in a separate file
+        if qe_id.contains("auto"):
+            auto_query = qe.verbose_output[0]
+            auto_filter = qe.verbose_output[1]
+        elif qe_id.contains("fusion"):
+            questions = qe.retriever.generated_questions
+        elif qe_id.contains("hyde"):
+            hyde_document = qe.hyde_object
 
         # collect token counts
         token_embeddings = token_counter.total_embedding_token_count
