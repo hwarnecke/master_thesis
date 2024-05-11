@@ -15,7 +15,7 @@ class FusionRetriever(BaseRetriever):
     def __init__(self, retriever):
         self.retriever = retriever
         super().__init__()
-        self.generated_questions: list = []
+        self.generated_questions: dict = {}
         self.mode: str = "OR"
 
     def _remove_leading_numbers(self, s) -> str:
@@ -54,7 +54,8 @@ class FusionRetriever(BaseRetriever):
 
         # generate a list of questions
         questions = self._generate_questions(query)
-        self.generated_questions = questions
+        #self.generated_questions = questions
+        self.log_questions(questions)
         questions.append(query)
 
         # collect all nodes from all retrievers
@@ -85,3 +86,18 @@ class FusionRetriever(BaseRetriever):
         retrieve_nodes: list = [combined_dict[node_id] for node_id in retrieve_ids]
 
         return retrieve_nodes
+
+
+    def log_questions(self, questions: list) -> None:
+        """
+        Converts the list into a dictionary that is convenient for logging it to csv.
+        :param questions: list of questions
+        :return: None
+        """
+        question_log: dict = {}
+        n: int = 1
+        for question in questions:
+            key = f"Question {n}"
+            question_log[key] = question
+
+        self.generated_questions = question_log

@@ -24,8 +24,8 @@ class ModifiedQueryEngine():
         self.total_time: int = 0
 
         # for the special cases that store extra information like HyDE, Auto or Fusion
-        self.hyde_object: str
-        self.verbose_output: list
+        self.hyde_object: dict
+        self.verbose_output: dict
         self.hyde = hyde
         self.use_hyde: bool = False if hyde is None else True
 
@@ -35,7 +35,7 @@ class ModifiedQueryEngine():
 
         if self.use_hyde:
             query_transformed = self.hyde(query_bundle)
-            self.hyde_object = query_transformed.embedding_strs[0]  # TODO: check format in which this is stored
+            self.hyde_object = {"Question": query_str, "Generated Document": query_transformed.embedding_strs[0]}  # TODO: check format in which this is stored
             nodes = self.retriever.retrieve(query_transformed)
         else:
             # the rerouting is done to catch potential verbose output from the AutoRetriever
@@ -54,9 +54,9 @@ class ModifiedQueryEngine():
             if len(lines) > 1:
                 query_str = lines[0].split(": ")[1]
                 filters = lines[1].split(": ")[1]
-                self.verbose_output = [query_str, filters]
+                self.verbose_output = {"Auto Query": query_str, "Filter": filters}
             else:
-                self.verbose_output = [value]
+                self.verbose_output = {"Other": value}
 
             sys.stdout = old_stdout
 

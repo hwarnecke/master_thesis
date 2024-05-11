@@ -17,18 +17,23 @@ class DataLogging:
         """
         self.file_path = file_path
         self.header_filled = False
+        self.add_header_filled = False
 
 
-    def write_csv(self, data):
+    def write_csv(self, data: dict, path: str = None):
         """
         Writes the given data to a CSV file.
         Creates a header the first time this method is called, regardless of the content of the file.
         If you open the same file with a different logger object, it will create a new header!
+        Specifying the path can be helpful to log the additional values
         :param data: Dict containing the name of the header and the value
+        :param path: str defaults to the file_path specified in the beginning
         :return: None
         """
+        if path is None:
+            path = self.file_path
 
-        with open(self.file_path, "a") as file:
+        with open(path, "a") as file:
             fieldnames = data.keys()
             writer = csv.DictWriter(file, fieldnames=fieldnames)
 
@@ -39,3 +44,4 @@ class DataLogging:
 
             # since the data should be a single dictionary, we can directly write it
             writer.writerow(data)
+

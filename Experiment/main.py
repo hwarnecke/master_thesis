@@ -73,7 +73,6 @@ for qe_id, qe in tqdm.tqdm(query_engines.items()):
         # create the data logging object
         path = "logs/" + qe_id + ".csv"
         data_logger = DataLogging(file_path=path)
-        # TODO: create special data logger for the additional info
         query = question["question"]
 
         response = qe.query(query)
@@ -91,14 +90,18 @@ for qe_id, qe in tqdm.tqdm(query_engines.items()):
                 "total_time": qe.total_time
                 }
 
-        # TODO: collect additional info and logg it in a separate file
+        # collect additional data if necessary and log them in a separate file
+        add_path: str = path + "additional_data"
+        add_data: dict = {}
         if qe_id.contains("auto"):
-            auto_query = qe.verbose_output[0]
-            auto_filter = qe.verbose_output[1]
+            add_data: dict = qe.verbose_output
         elif qe_id.contains("fusion"):
-            questions = qe.retriever.generated_questions
+            add_data: dict = qe.retriever.generated_questions
         elif qe_id.contains("hyde"):
-            hyde_document = qe.hyde_object
+            add_data: dict = qe.hyde_object
+
+        if add_data:
+            data_logger.write_csv(add_data, add_path)
 
         # collect token counts
         token_embeddings = token_counter.total_embedding_token_count
