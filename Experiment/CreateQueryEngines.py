@@ -14,7 +14,11 @@ from CombinedRetriever import CombinedRetriever
 from FusionRetriever import FusionRetriever
 from CustomQueryEngine import ModifiedQueryEngine
 
-def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_service_store", rerank_top_n = 3, retriever_top_k = 6):
+
+def create_query_engines(llm="gpt-3.5-turbo",
+                         vector_store_name="city_service_store",
+                         rerank_top_n=3,
+                         retriever_top_k=6):
 
     """
     This function creates the query engines for the experiment.
@@ -28,11 +32,11 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
 
     """
     the first part contains settings that are the same for all query engines
-    including the LLM, the vectore store and the reranker to use.
+    including the LLM, the vectorstore store and the reranker to use.
     """
     load_dotenv()
     api_key = os.getenv("OPENAI_API_KEY")
-    Settings.llm = OpenAI(model=llm, api_key=api_key) # if I want to use a local model, I need to make this more general
+    Settings.llm = OpenAI(model=llm, api_key=api_key)   # needs to be more general for a local model to be used
 
     # if I want to test different embeddings, I can call a different vector store here
     es_vector_store = ElasticsearchStore(
@@ -42,7 +46,7 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
 
     storage_context = StorageContext.from_defaults(vector_store=es_vector_store)
 
-    reranker = reranker = SentenceTransformerRerank(top_n=rerank_top_n)
+    reranker = SentenceTransformerRerank(top_n=rerank_top_n)
 
     index = VectorStoreIndex.from_vector_store(
         vector_store=es_vector_store,
@@ -110,8 +114,8 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
     2. the base query engine with the reranker
     """
     query_rerank = ModifiedQueryEngine(retriever=basic_retriever,
-                                     response_synthesizer=basic_response_synthesizer,
-                                     reranker=reranker)
+                                       response_synthesizer=basic_response_synthesizer,
+                                       reranker=reranker)
 
     name_id = "rerank"
     retriever_id = f"{name_id}_{llm_id}_{embedding_id}_{timestamp}"
@@ -122,7 +126,15 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
     """
 
     base = index.as_retriever(similarity_top_k=retriever_top_k)
-    bm25 = BM25Retriever.from_defaults(index=index, similarity_top_k=retriever_top_k)
+
+    # apparently, using an external vector store does block some functionality in order to simplify storage
+    # this means I cannot directly access the nodes in the docstore which are needed for the BM25
+    # one hacky solution is to just retrieve all nodes with a standard retriever and a high top_k
+    hacky_retriever = index.as_retriever(similarity_top_k=1000)
+    source_nodes = hacky_retriever.retrieve("und")
+    hacky_nodes = [x.node for x in source_nodes]
+
+    bm25 = BM25Retriever.from_defaults(nodes=hacky_nodes, similarity_top_k=retriever_top_k)
     hybrid_retriever = CombinedRetriever([base, bm25], mode="OR")
     query_hybrid = ModifiedQueryEngine(
         retriever=hybrid_retriever,
@@ -230,14 +242,16 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
         query_bundle = hyde(query_str)
         hyde_doc = query_bundle.embedding_strs[0]
     """
-
+    name_id = "hyde"
+    retriever_id = f"{name_id}_{llm_id}_{embedding_id}_{timestamp}"
     hyde = HyDEQueryTransform(include_original=True)
-    query_engine = ModifiedQueryEngine(
+    query_hyde = ModifiedQueryEngine(
         retriever=basic_retriever,
         response_synthesizer=basic_response_synthesizer,
         reranker=reranker,
         hyde=hyde
     )
+    query_engines[retriever_id] = query_hyde
 
     """
     6. RAG Fusion
@@ -259,6 +273,3 @@ def create_query_engines(llm = "gpt-3.5-turbo", vector_store_name = "city_servic
     query_engines[retriever_id] = query_fusion
 
     return query_engines
-
-
-

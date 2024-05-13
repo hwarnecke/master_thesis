@@ -1,8 +1,8 @@
 [
-{"Question": "Wie teuer is ein Personalausweis",
-  "Answer": "28,80€"},
-{"Question": "Wie teuer is ein Reisepass",
-  "Answer": "60€"},
-{"Question": "Wie teuer is ein Kinderreisepass",
-  "Answer": "13,00€"}
+{"question": "Wie teuer is ein Personalausweis",
+  "answer": "28,80€"},
+{"question": "Wie teuer is ein Reisepass",
+  "answer": "60€"},
+{"question": "Wie teuer is ein Kinderreisepass",
+  "answer": "13,00€"}
 ]

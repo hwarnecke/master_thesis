@@ -1,7 +1,6 @@
 from CreateQueryEngines import create_query_engines
 from DataLogging import DataLogging
-import json, tqdm, sys, time, tiktoken
-from io import StringIO
+import json, tqdm, tiktoken, os
 from deepeval.integrations.llama_index import (
     DeepEvalAnswerRelevancyEvaluator,
     DeepEvalFaithfulnessEvaluator,
@@ -22,7 +21,9 @@ llm = "gpt-3.5-turbo"
 
 
 # Create the query engines
-# for a more detailed description of the query engines and the possible variations that can be made, see the CreateQueryEngines.py file
+# for a more detailed description of the query engines and the possible variations that can be made,
+# see the CreateQueryEngines.py file
+print("Creating the Query Engines and setting up the experiment")
 query_engines = create_query_engines(llm=llm)
 
 # load the questions
@@ -33,7 +34,7 @@ questions = json.load(open("questions.json"))
 create the evaluators and the token counter
 """
 # the evaluators
-#TODO: find the evaluator that compares the two answers against each other
+# TODO: find the evaluator that compares the two answers against each other
 threshold = 0.5
 eval_model = "gpt-4"
 include_reason = True
@@ -66,17 +67,18 @@ Some retrievers like the RAG Fusion or the HyDE will have some additional inform
 I will create a separate file for these as they will have a different structure 
 and can't be easily compared to the other retrievers.
 """
-
+print("Starting Experiment")
 for qe_id, qe in tqdm.tqdm(query_engines.items()):
+
+    # create the data logging object
+    path = "logs/" + qe_id + ".csv"
+    data_logger = DataLogging(file_path=path)
+
     for question in tqdm.tqdm(questions):
 
-        # create the data logging object
-        path = "logs/" + qe_id + ".csv"
-        data_logger = DataLogging(file_path=path)
         query = question["question"]
 
         response = qe.query(query)
-
 
         correct_answer = question["answer"]
 
@@ -91,19 +93,25 @@ for qe_id, qe in tqdm.tqdm(query_engines.items()):
                 }
 
         # collect additional data if necessary and log them in a separate file
-        add_path: str = path + "additional_data"
+        # TODO: Done, needs testing // add it before the .csv not after
+        #add_path: str = path + "additional_data"
+        base_name, extension = os.path.splitext(path)
+        add_path: str = f"{base_name}_additional_data{extension}"
         add_data: dict = {}
-        if qe_id.contains("auto"):
+
+        # TODO: Fusion only logged 1 question, check that
+        if "auto" in qe_id:
             add_data: dict = qe.verbose_output
-        elif qe_id.contains("fusion"):
+        elif "fusion" in qe_id:
             add_data: dict = qe.retriever.generated_questions
-        elif qe_id.contains("hyde"):
+        elif "hyde" in qe_id:
             add_data: dict = qe.hyde_object
 
         if add_data:
             data_logger.write_csv(add_data, add_path)
 
         # collect token counts
+        # TODO: it always returns 0, so something is off here
         token_embeddings = token_counter.total_embedding_token_count
         token_prompt = token_counter.prompt_llm_token_count
         token_completion = token_counter.completion_llm_token_count
@@ -123,6 +131,7 @@ for qe_id, qe in tqdm.tqdm(query_engines.items()):
             eval_name = str(evaluator)
             eval_name = eval_name.replace("Evaluator", "")
 
+            # TODO: fix the eval_name as it currently includes like the whole type of the object
             results = {eval_name + "_passing": evaluation_result.passing,
                        eval_name + "_feedback": evaluation_result.feedback,
                        eval_name + "_score": evaluation_result.score}

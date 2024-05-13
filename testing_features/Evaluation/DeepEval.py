@@ -64,14 +64,14 @@ evaluators = {
 
 results = []
 for evaluator in evaluators:
-    print(evaluator)
-    evaluation_result = evaluators[evaluator].evaluate_response(query=user_input, response=response_object)
+    #print(evaluator)
+    #evaluation_result = evaluators[evaluator].evaluate_response(query=user_input, response=response_object)
     #print(evaluation_result.score)
-    results.extend([evaluation_result.passing, evaluation_result.feedback, evaluation_result.score])
-    print("\n")
+    #results.extend([evaluation_result.passing, evaluation_result.feedback, evaluation_result.score])
+    #print("\n")
     name = str(evaluator)
-    print(type(name))
+    #print(type(name))
     print(name)
 
-print(results)
+#print(results)
 

@@ -1,4 +1,5 @@
 import csv
+import os
 class DataLogging:
     """
     Class for logging data to a CSV file.
@@ -33,11 +34,23 @@ class DataLogging:
         if path is None:
             path = self.file_path
 
-        with open(path, "a") as file:
+        # in case the directory doesn't exist
+        dir_name = os.path.dirname(path)
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name)
+
+        # 'w' creates a new file but would also delete the content if it already exists
+        if os.path.exists(path):
+            mode = "a"
+        else:
+            mode = "w"
+
+        with open(path, mode) as file:
             fieldnames = data.keys()
-            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer = csv.DictWriter(file, fieldnames=fieldnames, delimiter=';')
 
             # write header if file is new
+            # TODO: Done but needs testing // currently it writes the header every time or not at all
             if not self.header_filled:
                 self.header_filled = True
                 writer.writeheader()
