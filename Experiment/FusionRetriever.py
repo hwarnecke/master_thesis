@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from llama_index.core.retrievers import BaseRetriever
 
+
 class FusionRetriever(BaseRetriever):
     """
     Implements RAG Fusion approach.
@@ -29,21 +30,20 @@ class FusionRetriever(BaseRetriever):
 
         template = "Du bekommst eine Frage übergeben. Erstelle 5 ähnliche Fragen die jeweils in eine leicht andere Richtung gehen, aber dennoch ähnlich sind. Beanwtorte nicht die Frage sondern gebe nur die neuen Fragen zuück. Die Frage lautet: \n {question}"
 
-        input = template.format(question=question)
+        user_input = template.format(question=question)
 
         chat_response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {
                     "role": "user",
-                    "content": input
+                    "content": user_input
                 }
             ],
         )
 
         generated_questions = chat_response.choices[0].message.content.split("\n")
         generated_questions = [self._remove_leading_numbers(s) for s in generated_questions]
-
         return generated_questions
 
     def _retrieve(self, query) -> list:
@@ -54,7 +54,6 @@ class FusionRetriever(BaseRetriever):
 
         # generate a list of questions
         questions = self._generate_questions(query)
-        #self.generated_questions = questions
         self.log_questions(questions)
         questions.append(query)
 
@@ -87,7 +86,6 @@ class FusionRetriever(BaseRetriever):
 
         return retrieve_nodes
 
-
     def log_questions(self, questions: list) -> None:
         """
         Converts the list into a dictionary that is convenient for logging it to csv.
@@ -99,5 +97,6 @@ class FusionRetriever(BaseRetriever):
         for question in questions:
             key = f"Question {n}"
             question_log[key] = question
+            n += 1
 
         self.generated_questions = question_log

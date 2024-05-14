@@ -1,5 +1,5 @@
 import tiktoken
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, get_response_synthesizer
 from llama_index.core import Settings
 from llama_index.core.callbacks import CallbackManager, TokenCountingHandler
 from llama_index.llms.openai import OpenAI
@@ -37,7 +37,16 @@ print(token_counter.total_embedding_token_count)
 # the count is only reset manually, otherwise it would accumulate over multiple queries
 token_counter.reset_counts()
 
-response = index.as_query_engine().query("Which grad schools did the author apply for and why?")
+#response = index.as_query_engine().query("Which grad schools did the author apply for and why?")
+
+
+# in my main experiment I don't use a query engine. I need to test if it can still track it then
+# EDIT: that works fine, the issue must be somewhere else
+retriever = index.as_retriever()
+response_snyth = get_response_synthesizer()
+
+query = "Which grad schools did the author apply for and why?"
+response = response_snyth.synthesize(query, retriever.retrieve(query))
 
 print(response)
 

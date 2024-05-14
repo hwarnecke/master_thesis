@@ -222,6 +222,7 @@ def create_query_engines(llm="gpt-3.5-turbo",
         retriever=auto_retriever,
         response_synthesizer=basic_response_synthesizer,
         reranker=reranker,
+        reroute_stdout=True,
     )
 
     name_id = "auto"

@@ -10,7 +10,7 @@ from io import StringIO
 class ModifiedQueryEngine():
 
     def __init__(self, retriever: BaseRetriever, response_synthesizer: BaseSynthesizer,
-                 reranker: SentenceTransformerRerank = None, hyde: HyDEQueryTransform = None):
+                 reranker: SentenceTransformerRerank = None, hyde: HyDEQueryTransform = None, reroute_stdout: bool = False):
 
         self.retriever = retriever
         self.response_synthesizer = response_synthesizer
@@ -29,6 +29,9 @@ class ModifiedQueryEngine():
         self.hyde = hyde
         self.use_hyde: bool = False if hyde is None else True
 
+        # in case the
+        self.reroute = reroute_stdout
+
     def query(self, query_str: str):
         start_time = time.time()
         query_bundle = QueryBundle(query_str)
@@ -38,27 +41,28 @@ class ModifiedQueryEngine():
             self.hyde_object = {"Question": query_str, "Generated Document": query_transformed.embedding_strs[0]}  # TODO: check format in which this is stored
             nodes = self.retriever.retrieve(query_transformed)
         else:
-            # the rerouting is done to catch potential verbose output from the AutoRetriever
-            # Since it doesn't hurt the other retrievers it can be done for all and I don't have to
-            # check for the AutoRetriever
-            old_stdout = sys.stdout
-            filter_info = StringIO()
-            sys.stdout = filter_info
+            # I included a flag to only reroute the output for the autoretriever because it otherwise
+            # interfered with my bug testing where I wanted the retrievers to print something
+            if self.reroute:
+                old_stdout = sys.stdout
+                filter_info = StringIO()
+                sys.stdout = filter_info
 
             nodes = self.retriever.retrieve(query_str)
 
             # the auto retriever will have a certain structure to the verbose output
             # the structure includes one line for the query and one line for a list of filters
-            value = filter_info.getvalue()
-            lines = value.split("\n")
-            if len(lines) > 1:
-                query_str = lines[0].split(": ")[1]
-                filters = lines[1].split(": ")[1]
-                self.verbose_output = {"Auto Query": query_str, "Filter": filters}
-            else:
-                self.verbose_output = {"Other": value}
+            if self.reroute:
+                value = filter_info.getvalue()
+                lines = value.split("\n")
+                if len(lines) > 1:
+                    query_str = lines[0].split(": ")[1]
+                    filters = lines[1].split(": ")[1]
+                    self.verbose_output = {"Auto Query": query_str, "Filter": filters}
+                else:
+                    self.verbose_output = {"Other": value}
 
-            sys.stdout = old_stdout
+                sys.stdout = old_stdout
 
         if self.use_reranker:
             nodes = self.reranker.postprocess_nodes(nodes, query_bundle)

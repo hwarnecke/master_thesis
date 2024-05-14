@@ -25,6 +25,9 @@ llm = "gpt-3.5-turbo"
 # see the CreateQueryEngines.py file
 print("Creating the Query Engines and setting up the experiment")
 query_engines = create_query_engines(llm=llm)
+for key, value in query_engines.items():
+    if "fusion" in key:
+        fusion_only = {key: value}
 
 # load the questions
 # currently the idea is to store them as a JSON in the format of a list of dictionaries
@@ -68,7 +71,7 @@ I will create a separate file for these as they will have a different structure
 and can't be easily compared to the other retrievers.
 """
 print("Starting Experiment")
-for qe_id, qe in tqdm.tqdm(query_engines.items()):
+for qe_id, qe in tqdm.tqdm(fusion_only.items()):
 
     # create the data logging object
     path = "logs/" + qe_id + ".csv"
@@ -93,13 +96,11 @@ for qe_id, qe in tqdm.tqdm(query_engines.items()):
                 }
 
         # collect additional data if necessary and log them in a separate file
-        # TODO: Done, needs testing // add it before the .csv not after
         #add_path: str = path + "additional_data"
         base_name, extension = os.path.splitext(path)
         add_path: str = f"{base_name}_additional_data{extension}"
         add_data: dict = {}
 
-        # TODO: Fusion only logged 1 question, check that
         if "auto" in qe_id:
             add_data: dict = qe.verbose_output
         elif "fusion" in qe_id:
@@ -120,6 +121,8 @@ for qe_id, qe in tqdm.tqdm(query_engines.items()):
                   "prompt_tokens": token_prompt,
                   "completion_tokens": token_completion,
                   "total_tokens": token_total}
+        # for testing
+        print("Token Embeddings: " + str(token_embeddings))
         token_counter.reset_counts()    # do not forget to reset the counts!
 
         # evaluate the response
@@ -130,8 +133,12 @@ for qe_id, qe in tqdm.tqdm(query_engines.items()):
             # turn the results into a dictionary based on the name of the evaluator
             eval_name = str(evaluator)
             eval_name = eval_name.replace("Evaluator", "")
+            # in my initial tests this returns only the name itself
+            # but if I run it here it will save the whole type in the csv
+            # so I need to trim it further
+            eval_name = eval_name.split("evaluators.")[1]
+            eval_name = eval_name.split(" object")[0]
 
-            # TODO: fix the eval_name as it currently includes like the whole type of the object
             results = {eval_name + "_passing": evaluation_result.passing,
                        eval_name + "_feedback": evaluation_result.feedback,
                        eval_name + "_score": evaluation_result.score}
