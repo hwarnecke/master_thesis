@@ -16,6 +16,7 @@ test them on a set of questions,
 evaluate the results
 and save them to disk.
 """
+# TODO: refactor it into a function call in order to run the experiment with multiple different parameters easily
 
 llm = "gpt-3.5-turbo"
 
@@ -79,11 +80,13 @@ total_amount_evaluators = len(evaluators)
 for qe_id, qe in query_engines.items():
     current_qe += 1
     # create the data logging object
+    # TODO: Move the identifiers out into a folder structure and only keep the type as name
     path = "logs/" + qe_id + ".csv"
     data_logger = DataLogging(file_path=path)
 
     # tqdm looked a bit ugly, so I'm creating my own outputs
-    print(f"Now starting Query Engine {current_qe} of {total_amount}: {qe_id.split("_2024")[0]}.")
+    qe_name = qe_id.split("/")[1].split("_2024")[0]
+    print(f"Now starting Query Engine {current_qe} of {total_amount}: {qe_name}.")
     current_question = 0
 
     for question in questions:
@@ -97,7 +100,7 @@ for qe_id, qe in query_engines.items():
         correct_answer = question["answer"]
 
         # save the information in a dictionary
-        info = {"ID": qe_id,
+        info = {"ID": qe_id.split("/")[1],  # ignore the part of the ID that is used for the directory
                 "query": query,
                 "response": response,
                 "correct_answer": correct_answer,
@@ -124,7 +127,7 @@ for qe_id, qe in query_engines.items():
 
         print("\t\tDone querying. Starting Evaluation.")
         # collect token counts
-        # TODO: EDIT: should no be logged // check if the Fusion Retriever LLM call is also logged or not
+        # TODO: EDIT: should now be logged // check if the Fusion Retriever LLM call is also logged or not
         token_embeddings = token_counter.total_embedding_token_count
         token_prompt = token_counter.prompt_llm_token_count
         token_completion = token_counter.completion_llm_token_count

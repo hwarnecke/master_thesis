@@ -50,6 +50,7 @@ class DataLogging:
             writer = csv.DictWriter(file, fieldnames=fieldnames, delimiter=';')
 
             # write header if file is new
+            # TODO: somehow this is not done for all files, just some
             if not self.header_filled:
                 self.header_filled = True
                 writer.writeheader()

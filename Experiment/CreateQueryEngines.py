@@ -14,11 +14,27 @@ from CombinedRetriever import CombinedRetriever
 from FusionRetriever import FusionRetriever
 from ModifiedQueryEngine import ModifiedQueryEngine
 
+def generateID(name: str, llm: str, embedding: str, timestamp: str, prompt: str) -> str:
+    """
+    The ID doubles as the directory and name of the QE, that's why it has everything two times.
+    Everything before the '/' will be used as the directory and everything after that will be used as file name.
+    For the directory it seems better to start with the timestamps. This will put runs that were made in succession
+    next to each other (i.e. different llms are most likely tested directly after each other).
+    While for the name it is better to start with the name, as that is the most important piece of information.
+    The timestamp is the least significant information, so it is placed last.
+    :param name:
+    :param llm:
+    :param embedding:
+    :param timestamp:
+    :param prompt:
+    :return: str - the ID
+    """
+    return f"{timestamp}_{llm}_{embedding}_{prompt}/{name}_{llm}_{embedding}_{prompt}_{timestamp}"
 
 def create_query_engines(llm="gpt-3.5-turbo",
                          vector_store_name="city_service_store",
                          rerank_top_n=3,
-                         retriever_top_k=6):
+                         retriever_top_k=6) -> dict:
 
     """
     This function creates the query engines for the experiment.
@@ -43,6 +59,9 @@ def create_query_engines(llm="gpt-3.5-turbo",
         index_name=vector_store_name,
         es_url="http://localhost:9200",
     )
+
+    # TODO: add implementation for using custom prompts
+    prompt_id = "default"
 
     storage_context = StorageContext.from_defaults(vector_store=es_vector_store)
 
@@ -107,7 +126,7 @@ def create_query_engines(llm="gpt-3.5-turbo",
     query_base = ModifiedQueryEngine(retriever=basic_retriever, response_synthesizer=basic_response_synthesizer)
 
     name_id = "base"
-    retriever_id = f"{name_id}_{llm_id}_{embedding_id}_{timestamp}"
+    retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
     query_engines[retriever_id] = query_base
 
     """
@@ -118,7 +137,7 @@ def create_query_engines(llm="gpt-3.5-turbo",
                                        reranker=reranker)
 
     name_id = "rerank"
-    retriever_id = f"{name_id}_{llm_id}_{embedding_id}_{timestamp}"
+    retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
     query_engines[retriever_id] = query_rerank
 
     """
@@ -143,7 +162,7 @@ def create_query_engines(llm="gpt-3.5-turbo",
     )
 
     name_id = "hybrid"
-    retriever_id = f"{name_id}_{llm_id}_{embedding_id}_{timestamp}"
+    retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
     query_engines[retriever_id] = query_hybrid
 
     """
@@ -226,7 +245,7 @@ def create_query_engines(llm="gpt-3.5-turbo",
     )
 
     name_id = "auto"
-    retriever_id = f"{name_id}_{llm_id}_{embedding_id}_{timestamp}"
+    retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
     query_engines[retriever_id] = query_auto
 
     """
@@ -244,7 +263,7 @@ def create_query_engines(llm="gpt-3.5-turbo",
         hyde_doc = query_bundle.embedding_strs[0]
     """
     name_id = "hyde"
-    retriever_id = f"{name_id}_{llm_id}_{embedding_id}_{timestamp}"
+    retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
     hyde = HyDEQueryTransform(include_original=True)
     query_hyde = ModifiedQueryEngine(
         retriever=basic_retriever,
@@ -270,7 +289,7 @@ def create_query_engines(llm="gpt-3.5-turbo",
     )
 
     name_id = "fusion"
-    retriever_id = f"{name_id}_{llm_id}_{embedding_id}_{timestamp}"
+    retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
     query_engines[retriever_id] = query_fusion
 
     return query_engines
