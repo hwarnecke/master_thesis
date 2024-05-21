@@ -124,7 +124,7 @@ for qe_id, qe in query_engines.items():
 
         print("\t\tDone querying. Starting Evaluation.")
         # collect token counts
-        # TODO: check if the Fusion Retriever LLM call is also logged or not
+        # TODO: EDIT: should no be logged // check if the Fusion Retriever LLM call is also logged or not
         token_embeddings = token_counter.total_embedding_token_count
         token_prompt = token_counter.prompt_llm_token_count
         token_completion = token_counter.completion_llm_token_count

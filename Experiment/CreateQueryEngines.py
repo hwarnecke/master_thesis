@@ -12,7 +12,7 @@ from llama_index.core.indices.query.query_transform.base import HyDEQueryTransfo
 
 from CombinedRetriever import CombinedRetriever
 from FusionRetriever import FusionRetriever
-from CustomQueryEngine import ModifiedQueryEngine
+from ModifiedQueryEngine import ModifiedQueryEngine
 
 
 def create_query_engines(llm="gpt-3.5-turbo",

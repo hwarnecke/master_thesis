@@ -1,7 +1,9 @@
 import os
 import re
 from dotenv import load_dotenv
-from openai import OpenAI
+from llama_index.llms.openai import OpenAI
+from llama_index.core import Settings
+#from openai import OpenAI
 from llama_index.core.retrievers import BaseRetriever
 
 
@@ -13,11 +15,12 @@ class FusionRetriever(BaseRetriever):
     All questions are used to retrieve nodes from the retriever.
     This should be used in combination with a reranker for the query engine.
     """
-    def __init__(self, retriever):
+    def __init__(self, retriever, llm: str = "gpt-3.5-turbo"):
         self.retriever = retriever
         super().__init__()
         self.generated_questions: dict = {}
         self.mode: str = "OR"
+        self.llm = llm
 
     def _remove_leading_numbers(self, s) -> str:
         return re.sub(r'^\d+\.\s*', '', s)
@@ -26,22 +29,23 @@ class FusionRetriever(BaseRetriever):
         load_dotenv()
         api_key = os.getenv("OPENAI_API_KEY")
 
-        client = OpenAI(api_key=api_key)
+        #client = OpenAI(api_key=api_key)
+        Settings.llm = OpenAI(model=self.llm, api_key=api_key)
 
         template = "Du bekommst eine Frage übergeben. Erstelle 5 ähnliche Fragen die jeweils in eine leicht andere Richtung gehen, aber dennoch ähnlich sind. Beanwtorte nicht die Frage sondern gebe nur die neuen Fragen zuück. Die Frage lautet: \n {question}"
 
         user_input = template.format(question=question)
 
-        chat_response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "user",
-                    "content": user_input
-                }
-            ],
-        )
-
+        # chat_response = client.chat.completions.create(
+        #     model="gpt-3.5-turbo",
+        #     messages=[
+        #         {
+        #             "role": "user",
+        #             "content": user_input
+        #         }
+        #     ],
+        # )
+        chat_response = Settings.llm.complete(user_input)
         generated_questions = chat_response.choices[0].message.content.split("\n")
         generated_questions = [self._remove_leading_numbers(s) for s in generated_questions]
         return generated_questions

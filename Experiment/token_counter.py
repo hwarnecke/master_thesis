@@ -12,7 +12,7 @@ from llama_index.llms.openai import OpenAI
 from llama_index.vector_stores.elasticsearch import ElasticsearchStore
 
 from CreateQueryEngines import create_query_engines
-from CustomQueryEngine import ModifiedQueryEngine
+from ModifiedQueryEngine import ModifiedQueryEngine
 
 """
 Update:
