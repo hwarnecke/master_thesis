@@ -9,6 +9,7 @@ from llama_index.retrievers.bm25 import BM25Retriever
 from llama_index.core.retrievers import VectorIndexAutoRetriever
 from llama_index.core.vector_stores import MetadataInfo, VectorStoreInfo
 from llama_index.core.indices.query.query_transform.base import HyDEQueryTransform
+from llama_index.core import PromptTemplate
 
 from CombinedRetriever import CombinedRetriever
 from FusionRetriever import FusionRetriever
@@ -32,15 +33,17 @@ def generateID(name: str, llm: str, embedding: str, timestamp: str, prompt: str)
     return f"{timestamp}_{llm}_{embedding}_{prompt}/{name}_{llm}_{embedding}_{prompt}_{timestamp}"
 
 def create_query_engines(llm="gpt-3.5-turbo",
-                         vector_store_name="city_service_store",
+                         embedding_id="ada-002",
                          rerank_top_n=3,
-                         retriever_top_k=6) -> dict:
+                         retriever_top_k=6,
+                         custom_qa_prompt: str = None,
+                         custom_refine_prompt: str = None) -> dict:
 
     """
     This function creates the query engines for the experiment.
     Since most query engines need the same base elements, this function is used to avoid code duplication.
     :param llm: the OpenAI model to be used. Default is "gpt-3.5-turbo", alternative is gpt-4-turbo
-    :param vector_store_name: the name of the vector store to be used. Default is "city_service_store"
+    :param embedding_id: the embedding to use, will be matched to the fitting es store. Llamaindex defaults to ada-002.
     :param rerank_top_n: the number of top nodes to be returned by the reranker. Default is 3.
     :param retriever_top_k: the number of top nodes to be returned by the retriever. Default is 6.
     :return: a dictionary of query engines with the retriever ID as key
@@ -54,16 +57,22 @@ def create_query_engines(llm="gpt-3.5-turbo",
     api_key = os.getenv("OPENAI_API_KEY")
     Settings.llm = OpenAI(model=llm, api_key=api_key)   # needs to be more general for a local model to be used
 
+    # TODO: add the other names once created
+    match embedding_id:
+        case "ada-002":
+          vector_store_name = "city_service_store"
+        case _:
+            raise ValueError("No fitting embedding was found for the ID given!")
+
     # if I want to test different embeddings, I can call a different vector store here
     es_vector_store = ElasticsearchStore(
         index_name=vector_store_name,
         es_url="http://localhost:9200",
     )
 
-    # TODO: add implementation for using custom prompts
-    prompt_id = "default"
-
     storage_context = StorageContext.from_defaults(vector_store=es_vector_store)
+
+
 
     reranker = SentenceTransformerRerank(top_n=rerank_top_n)
 
@@ -72,7 +81,20 @@ def create_query_engines(llm="gpt-3.5-turbo",
         storage_context=storage_context,
         show_progress=False)
 
-    basic_response_synthesizer = get_response_synthesizer()
+    basic_response_synthesizer = get_response_synthesizer(response_mode="refine")
+
+    prompt_id = "default_prompt"
+    if custom_qa_prompt and custom_refine_prompt:
+        custom_qa_template = PromptTemplate(custom_qa_prompt)
+        custom_refine_template = PromptTemplate(custom_refine_prompt)
+        # TODO: might want to add a more descriptive name if I use multiple different prompts
+        prompt_id = "custom_prompt"
+        basic_response_synthesizer.update_prompts(
+            {
+                "qa_template": custom_qa_template,
+                "refine_template": custom_refine_template,
+            }
+        )
 
     basic_retriever = index.as_retriever(similarity_top_k=retriever_top_k)
 
@@ -105,9 +127,6 @@ def create_query_engines(llm="gpt-3.5-turbo",
         llm_id = "gpt3"
     elif llm == "gpt-4-turbo":
         llm_id = "gpt4"
-
-    # the embedding used
-    embedding_id = "default"
 
     # the timestamp needs to be formatted in order to allow it as a file name
     current_time = datetime.datetime.now()

@@ -3,6 +3,7 @@ from llama_index.core import Settings
 from llama_index.core import PromptTemplate
 from llama_index.llms.openai import OpenAI
 from dotenv import load_dotenv
+from llama_index.core import get_response_synthesizer
 import os
 
 """
@@ -21,6 +22,8 @@ documents = SimpleDirectoryReader(
 index = VectorStoreIndex.from_documents(documents, show_progress=True)
 
 query_engine = index.as_query_engine(similarity_top_k=3, llm=gpt35_llm)
+
+response_synth = get_response_synthesizer()
 
 # return the current prompts
 # defualt is the refine response mode, which includes a qa_template and a refine_template
@@ -51,3 +54,9 @@ query_engine.update_prompts(
     }
 )
 
+response_synth.update_prompts(
+    {
+        "qa_template": custom_qa_template,
+        "refine_template": custom_refine_template,
+    }
+)

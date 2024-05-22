@@ -100,5 +100,16 @@ def LlamaTest():
     )
 
 
+def response_test():
+    load_dotenv()
+    api_key = os.getenv("OPENAI_API_KEY")
+
+    # Set the LLM
+    Settings.llm = llamaOpenAI(model="gpt-3.5-turbo", api_key=api_key)
+    prompt = "Translate the following English text to French: 'Hello, how are you?'"
+    response = Settings.llm.complete(prompt)
+    first_word = response.text.split(" ")[0]
+    print(first_word)
+
 if __name__ == "__main__":
-    LlamaTest()
+    response_test()

@@ -46,7 +46,7 @@ class FusionRetriever(BaseRetriever):
         #     ],
         # )
         chat_response = Settings.llm.complete(user_input)
-        generated_questions = chat_response.choices[0].message.content.split("\n")
+        generated_questions = chat_response.text.split("\n")
         generated_questions = [self._remove_leading_numbers(s) for s in generated_questions]
         return generated_questions
 
