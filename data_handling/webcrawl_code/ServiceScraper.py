@@ -107,7 +107,7 @@ class ServiceScraper():
             Fachbereich = match.group()
         return {'Fachbereich': Fachbereich}
 
-    def __CreateNodes(self, services):
+    def __CreateNodes(self, services, chunk_size: int = 512):
         """
         Creates TextNodes from the text of the services and adds the respective metadata.
         :param services: Dict - the dictionary of all the services
@@ -117,7 +117,7 @@ class ServiceScraper():
         for service_name, service_data in tqdm.tqdm(services.items()):
 
             # Create TextNodes
-            splitter = SentenceSplitter(chunk_size=1024, chunk_overlap=20)
+            splitter = SentenceSplitter(chunk_size=chunk_size, chunk_overlap=20)
             text_nodes = splitter.get_nodes_from_documents([Document(text=service_data['text'])])
 
             for node in text_nodes:
@@ -140,7 +140,7 @@ class ServiceScraper():
 
 
 
-    def ScrapeServicePage(self, url = "https://service.osnabrueck.de/dienstleistungen?search=&kategorie="):
+    def ScrapeServicePage(self, url: str = "https://service.osnabrueck.de/dienstleistungen?search=&kategorie=", chunk_size: int = 512):
         """
         Scrapes the service.osnabrueck.de website.
         Collects the URLs of the services from the Dienstleistungen A-Z page.
@@ -148,6 +148,7 @@ class ServiceScraper():
         Collects the contact data from the service pages.
         Creates TextNodes from the text of the services and adds the respective metadata.
         :param url: String - the URL of the Dienstleistungen A-Z page
+        :param chunk_size: The chunk size of the nodes that are created. Some embeddings might not work with 1024.
         :return: List of TextNodes
         """
         print("\n01/03: Fetching URLs from: " + url)
@@ -160,7 +161,7 @@ class ServiceScraper():
             services[service_name].update(content)
 
         print("\n03/03: Creating TextNodes...")
-        text_nodes = self.__CreateNodes(services)
+        text_nodes = self.__CreateNodes(services, chunk_size=chunk_size)
         print("\nCreated " + str(len(text_nodes)) + " TextNodes")
 
         return text_nodes

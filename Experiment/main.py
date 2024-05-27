@@ -21,7 +21,7 @@ and save them to disk.
 def run_experiment(questions: str = "questions.json",
                    custom_qa_path: str = None,
                    custom_refine_path: str = None,
-                   embedding: str = "ada-002",
+                   embedding: str = None,
                    llm: str = "gpt-3.5-turbo",
                    rerank_top_n: int = 3,
                    retrieval_top_k: int = 6,
@@ -32,7 +32,7 @@ def run_experiment(questions: str = "questions.json",
     :param questions: path of the json file containing the questions
     :param custom_qa_path: path to the prompt template to use
     :param custom_refine_path: path to the prompt template to use
-    :param embedding: name of the embedding to use (as default text-embedding-ada-002 is used)
+    :param embedding: name of the HF embedding to use (as default text-embedding-ada-002 is used)
     :param llm: name of the llm to use (currently only gpt-3.5-turbo and gpt-4 is supported)
     :param rerank_top_n: how many documents the reranker should choose (default is 3)
     :param retrieval_top_k: how many documents the retriever should fetch (default is 6)
@@ -179,7 +179,6 @@ def run_experiment(questions: str = "questions.json",
 
             print("\t\tDone querying. Starting Evaluation.")
             # collect token counts
-            # TODO: EDIT: should now be logged // check if the Fusion Retriever LLM call is also logged or not
             token_embeddings = token_counter.total_embedding_token_count
             token_prompt = token_counter.prompt_llm_token_count
             token_completion = token_counter.completion_llm_token_count

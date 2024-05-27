@@ -10,6 +10,7 @@ from llama_index.core.retrievers import VectorIndexAutoRetriever
 from llama_index.core.vector_stores import MetadataInfo, VectorStoreInfo
 from llama_index.core.indices.query.query_transform.base import HyDEQueryTransform
 from llama_index.core import PromptTemplate
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 from CombinedRetriever import CombinedRetriever
 from FusionRetriever import FusionRetriever
@@ -32,10 +33,11 @@ def generateID(name: str, llm: str, embedding: str, timestamp: str, prompt: str)
     """
     return f"{timestamp}_{llm}_{embedding}_{prompt}/{name}_{llm}_{embedding}_{prompt}_{timestamp}"
 
-def create_query_engines(llm="gpt-3.5-turbo",
-                         embedding_id="ada-002",
-                         rerank_top_n=3,
-                         retriever_top_k=6,
+def create_query_engines(llm: str = "gpt-3.5-turbo",
+                         embedding_name: str =None,
+                         embedding_url: str = "http://localhost:9200",
+                         rerank_top_n: int = 3,
+                         retriever_top_k: int = 6,
                          custom_qa_prompt: str = None,
                          custom_refine_prompt: str = None) -> dict:
 
@@ -43,9 +45,12 @@ def create_query_engines(llm="gpt-3.5-turbo",
     This function creates the query engines for the experiment.
     Since most query engines need the same base elements, this function is used to avoid code duplication.
     :param llm: the OpenAI model to be used. Default is "gpt-3.5-turbo", alternative is gpt-4-turbo
-    :param embedding_id: the embedding to use, will be matched to the fitting es store. Llamaindex defaults to ada-002.
+    :param embedding_name: a name of a HuggingFace embedding. Default is the OpenAI/text-embedding-ada-002
+    :param embedding_url: the url of the docker container with the index
     :param rerank_top_n: the number of top nodes to be returned by the reranker. Default is 3.
     :param retriever_top_k: the number of top nodes to be returned by the retriever. Default is 6.
+    :param custom_qa_prompt: the prompt to use for the qa part of the refine response mode.
+    :param custom_refine_prompt: the prompt to use for the refine part of the refine response mode.
     :return: a dictionary of query engines with the retriever ID as key
     """
 
@@ -57,17 +62,21 @@ def create_query_engines(llm="gpt-3.5-turbo",
     api_key = os.getenv("OPENAI_API_KEY")
     Settings.llm = OpenAI(model=llm, api_key=api_key)   # needs to be more general for a local model to be used
 
-    # TODO: add the other names once created
-    match embedding_id:
-        case "ada-002":
-          vector_store_name = "city_service_store"
-        case _:
-            raise ValueError("No fitting embedding was found for the ID given!")
+    # TODO: when creating the ES store, make sure to follow the naming pattern
+    if embedding_name:
+        vector_store_name = "service_" + embedding_name.split("/")[1]
+        embedding_model = HuggingFaceEmbedding(model_name=embedding_name)
+        Settings.embed_model = embedding_model
+        # for the model ID I pick a very short abbreviation in order to keep the file names shorter
+        embedding_id = embedding_name.split("/")[1].split("-")[0]
+    else:
+        vector_store_name = "city_service_store"
+        embedding_id = "ada-002"
 
     # if I want to test different embeddings, I can call a different vector store here
     es_vector_store = ElasticsearchStore(
         index_name=vector_store_name,
-        es_url="http://localhost:9200",
+        es_url=embedding_url,
     )
 
     storage_context = StorageContext.from_defaults(vector_store=es_vector_store)

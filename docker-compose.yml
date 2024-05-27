@@ -1,13 +1,8 @@
-#version: '2.2'
 services:
   buergerforen:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
     container_name: elastic_buergerforen
     environment:
-      #- node.name=es01
-      #- cluster.name=es-docker-cluster
-      #- discovery.seed_hosts=es02,es03
-      #- cluster.initial_master_nodes=es01,es02,es03
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - discovery.type=single-node
@@ -29,10 +24,6 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
     container_name: elastic_city_services
     environment:
-      #- node.name=es01
-      #- cluster.name=es-docker-cluster
-      #- discovery.seed_hosts=es02,es03
-      #- cluster.initial_master_nodes=es01,es02,es03
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - discovery.type=single-node
