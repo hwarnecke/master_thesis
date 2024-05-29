@@ -1,21 +1,6 @@
-"""
-Create a ElasticSearch vector store and fill it with the City Service information scraped from the website.
-
-Remember to start the specific ElasticSearch docker container with the following command:
-
-        docker compose up city_services -d
-
-If the docker daemon is not running, start it with:
-
-            sudo systemctl start docker
-
-To stop the container, use:
-
-                docker compose down city_services
-"""
-
 import os, sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from dotenv import load_dotenv
@@ -24,32 +9,27 @@ from llama_index.vector_stores.elasticsearch import ElasticsearchStore
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from data_handling.webcrawl_code.ServiceScraper import ServiceScraper
 
+"""
+Create a ElasticSearch vector store and fill it with the City Service information scraped from the website.
 
+Remember to start the specific ElasticSearch docker container
 
-def old():
-    # some settings
-    # this currently uses the OpenAI embedding model,
-    # I want to test if maybe a model specifically for german text would be better
-    load_dotenv()
-    api_key = os.getenv("OPENAI_API_KEY")
+If the docker daemon is not running, start it with:
 
-    # create an Elasticsearch index
-    es_vector_store = ElasticsearchStore(
-        index_name="city_service_store",
-        es_url="http://localhost:9200",
-    )
+        sudo systemctl start docker
+        
+Start the container with:
 
-    storage_context = StorageContext.from_defaults(vector_store=es_vector_store)
+        docker compose up city_services -d
 
-    # load the City Service data
-    scraper = ServiceScraper()
-    nodes = scraper.ScrapeServicePage()
+To stop the container, use:
 
-    index = VectorStoreIndex(nodes=nodes, storage_context=storage_context, show_progress=True)
+        docker compose down city_services
+"""
+
 
 def create_index(models: list,
                  es_url: str = "http://localhost:9200"):
-
     load_dotenv()
     open_ai_key = os.getenv("OPENAI_API_KEY")
     hugging_face_key = os.getenv("HF_API_KEY")
@@ -84,10 +64,11 @@ def main():
     models = ["OpenAI/text-embedding-ada-002",
               "jinaai/jina-embeddings-v2-base-de",
               "intfloat/multilingual-e5-large-instruct",
-              #"T-Systems-onsite/cross-en-de-roberta-sentence-transformer"
-                ]
+              "T-Systems-onsite/cross-en-de-roberta-sentence-transformer"
+              ]
 
     create_index(models)
+
 
 if __name__ == "__main__":
     main()
