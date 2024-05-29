@@ -34,7 +34,7 @@ def generateID(name: str, llm: str, embedding: str, timestamp: str, prompt: str)
     return f"{timestamp}_{llm}_{embedding}_{prompt}/{name}_{llm}_{embedding}_{prompt}_{timestamp}"
 
 def create_query_engines(llm: str = "gpt-3.5-turbo",
-                         embedding_name: str =None,
+                         embedding_name: str ="OpenAI/text-embedding-ada-002",
                          embedding_url: str = "http://localhost:9200",
                          rerank_top_n: int = 3,
                          retriever_top_k: int = 6,
@@ -63,15 +63,12 @@ def create_query_engines(llm: str = "gpt-3.5-turbo",
     Settings.llm = OpenAI(model=llm, api_key=api_key)   # needs to be more general for a local model to be used
 
     # TODO: when creating the ES store, make sure to follow the naming pattern
-    if embedding_name:
-        vector_store_name = "service_" + embedding_name.split("/")[1]
+    vector_store_name = "service_" + embedding_name.split("/")[1]
+    if not embedding_name == "OpenAI/text-embedding-ada-002":
         embedding_model = HuggingFaceEmbedding(model_name=embedding_name)
         Settings.embed_model = embedding_model
-        # for the model ID I pick a very short abbreviation in order to keep the file names shorter
-        embedding_id = embedding_name.split("/")[1].split("-")[0]
-    else:
-        vector_store_name = "city_service_store"
-        embedding_id = "ada-002"
+    # for the model ID I pick a very short abbreviation in order to keep the file names shorter
+    embedding_id = embedding_name.split("/")[1].split("-")[0]
 
     # if I want to test different embeddings, I can call a different vector store here
     es_vector_store = ElasticsearchStore(

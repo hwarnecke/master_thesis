@@ -1,0 +1,8 @@
+Die ursprüngliche Anfrage lautet wie folgt: {query_str}
+Wir haben bereits eine Antwort: {existing_answer}
+Wir die Möglichkeit, die vorhandene Antwort (nur falls erforderlich) mit etwas mehr Kontext zu verfeinern. Der Kontext findet sich unten.
+---------------------
+{context_msg}
+---------------------
+Verwende den neuen Kontext, um die ursprüngliche Antwort zu verbessern und die Anfrage besser zu beantworten. Wenn der Kontext nicht hilfreich ist, gib die ursprüngliche Antwort zurück.
+Verbesserte Antwort:

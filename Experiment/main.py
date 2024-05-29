@@ -21,7 +21,7 @@ and save them to disk.
 def run_experiment(questions: str = "questions.json",
                    custom_qa_path: str = None,
                    custom_refine_path: str = None,
-                   embedding: str = None,
+                   embedding: str = "OpenAI/text-embedding-ada-002",
                    llm: str = "gpt-3.5-turbo",
                    rerank_top_n: int = 3,
                    retrieval_top_k: int = 6,
@@ -33,7 +33,7 @@ def run_experiment(questions: str = "questions.json",
     :param custom_qa_path: path to the prompt template to use
     :param custom_refine_path: path to the prompt template to use
     :param embedding: name of the HF embedding to use (as default text-embedding-ada-002 is used)
-    :param llm: name of the llm to use (currently only gpt-3.5-turbo and gpt-4 is supported)
+    :param llm: name of the llm to use (currently only OpenAI models are supported)
     :param rerank_top_n: how many documents the reranker should choose (default is 3)
     :param retrieval_top_k: how many documents the retriever should fetch (default is 6)
     :param use_query_engines: list of names if only some specific query engines should be used instead of all of them
@@ -63,7 +63,7 @@ def run_experiment(questions: str = "questions.json",
     # see the CreateQueryEngines.py file
     print("Creating the Query Engines and setting up the experiment")
     all_query_engines = create_query_engines(llm=llm,
-                                             embedding_id=embedding,
+                                             embedding_name=embedding,
                                              rerank_top_n=rerank_top_n,
                                              retriever_top_k=retrieval_top_k,
                                              custom_qa_prompt=custom_qa_content,
@@ -222,4 +222,20 @@ def run_experiment(questions: str = "questions.json",
 
 
 if __name__ == "__main__":
-    run_experiment(use_query_engines=["fusion"])
+    embedding_models = ["OpenAI/text-embedding-ada-002",
+              "jinaai/jina-embeddings-v2-base-de",
+              "intfloat/multilingual-e5-large-instruct",
+              "T-Systems-onsite/cross-en-de-roberta-sentence-transformer"
+              ]
+
+    llms = ["gpt-3.5-turbo", "gpt-4"]
+
+    custom_qa_path = "PromptTemplates/german_qa_template.txt"
+    custom_refine_path = "PromptTemplates/german_refine_template.txt"
+
+    for llm in llms:
+        for embedding in embedding_models:
+            run_experiment(custom_qa_path=custom_qa_path,
+                           custom_refine_path=custom_refine_path,
+                           embedding=embedding,
+                           llm=llm)

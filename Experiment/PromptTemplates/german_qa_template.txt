@@ -1,0 +1,7 @@
+Die Kontextinformationen befinden sich unten.
+---------------------
+{context_str}
+---------------------
+Beantworte die Anfrage basierend auf den Kontextinformationen und ohne vorheriges Wissen.
+Anfrage: {query_str}
+Antwort:

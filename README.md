@@ -79,3 +79,8 @@ You can stop the instance from running with:
 ```shell
 docker compose down city_service
 ```
+
+## API Key
+
+Since this Experiment mostly uses OpenAI LLMs both for the RAG system as well as the evaluators, an OpenAI API key is needed.
+The key needs to be provided in an .env file under the tag ``OPENAI_API_KEY``.
