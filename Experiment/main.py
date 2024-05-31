@@ -76,7 +76,7 @@ def run_experiment(questions: str = "questions.json",
     else:
         query_engines.update(all_query_engines)
 
-    print("The following query engines have been choosen:")
+    print("The following query engines have been chosen:")
     count: int = 0
     for name, qe in query_engines.items():
         count += 1
@@ -148,6 +148,7 @@ def run_experiment(questions: str = "questions.json",
             query = question["question"]
 
             response = qe.query(query)
+            nodes: dict[str, str] = extract_source_nodes(response)
 
             correct_answer = question["answer"]
 
@@ -216,17 +217,52 @@ def run_experiment(questions: str = "questions.json",
             # save the information to disk
             data = {}
             data.update(info)
+            data.update(nodes)
             data.update(tokens)
             data.update(evaluation)
             data_logger.write_csv(data)
 
 
-if __name__ == "__main__":
+# TODO: include some metadata (i.e. link) in the logs
+#       in order to check if all nodes come from the same page
+def extract_source_nodes(response) -> dict[str, str]:
+    """
+    :param response: LlamaIndex Response Object
+    :return: the nodes as dict for data logging
+    """
+    n: int = 0
+    source_nodes = {}
+    all_nodes = response.source_nodes
+    for node in all_nodes:
+        n += 1
+        number = f"Node {n}"
+        # extract the ID
+        id_key = number + " ID"
+        id_value = node.node_id
+        # the content
+        content_key = number + " content"
+        content_value = node.get_text()
+        # the score
+        score_key = number + " score"
+        score_value = node.get_score()
+        # and the name of the service the node came from
+        metadata_key = number + " Metadata: Name"
+        metadata_content = node.metadata["Name"]
+
+        node_dict = {id_key: id_value,
+                     content_key: content_value,
+                     metadata_key: metadata_content,
+                     score_key: score_value}
+        source_nodes.update(node_dict)
+    return source_nodes
+
+
+def run_all():
     embedding_models = ["OpenAI/text-embedding-ada-002",
-              "jinaai/jina-embeddings-v2-base-de",
-              "intfloat/multilingual-e5-large-instruct",
-              "T-Systems-onsite/cross-en-de-roberta-sentence-transformer"
-              ]
+                        "jinaai/jina-embeddings-v2-base-de",
+                        "intfloat/multilingual-e5-large-instruct",
+                        "T-Systems-onsite/cross-en-de-roberta-sentence-transformer"
+                        ]
 
     llms = ["gpt-3.5-turbo", "gpt-4"]
 
@@ -239,3 +275,7 @@ if __name__ == "__main__":
                            custom_refine_path=custom_refine_path,
                            embedding=embedding,
                            llm=llm)
+
+
+if __name__ == "__main__":
+    run_experiment(use_query_engines=["base"])

@@ -1,12 +1,9 @@
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, QueryBundle
-from llama_index.core.indices.query.query_transform.base import (
-    HyDEQueryTransform,
-)
-from llama_index.core.query_engine import TransformQueryEngine
-from llama_index.core import Settings, get_response_synthesizer
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext
+from llama_index.core import Settings
 from llama_index.llms.openai import OpenAI
 import os
 from dotenv import load_dotenv
+from llama_index.vector_stores.elasticsearch import ElasticsearchStore
 
 def main():
     # some settings
@@ -36,8 +33,39 @@ def main():
         print(node.get_content())
 
 
-# what is all the weird reference answer shit there??
+def es_main():
+    embedding_name = "OpenAI/text-embedding-ada-002"
+    vector_store_name = "service_" + embedding_name.split("/")[1]
+    load_dotenv()
+    api_key = os.getenv("OPENAI_API_KEY")
+    Settings.llm = OpenAI(model="gpt-3.5-turbo", api_key=api_key)
+
+    es_vector_store = ElasticsearchStore(
+        index_name=vector_store_name,
+        es_url="http://localhost:9200",
+    )
+
+    storage_context = StorageContext.from_defaults(vector_store=es_vector_store)
+
+    index = VectorStoreIndex.from_vector_store(
+        vector_store=es_vector_store,
+        storage_context=storage_context,
+        show_progress=False)
+
+    query_engine = index.as_query_engine()
+
+    query = "Was kostet ein Personalausweis?"
+
+    response = query_engine.query(query)
+
+    retrieved_nodes = response.source_nodes
+    # print("Get Text:\n")
+    # print(retrieved_nodes[0].get_text())
+    # print("Get Content:\n")
+    # print(retrieved_nodes[0].get_content())
+    metadata = retrieved_nodes[0].metadata
+    print(metadata["Name"])
 
 
 if __name__ == "__main__":
-    main()
+    es_main()
