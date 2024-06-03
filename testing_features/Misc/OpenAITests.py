@@ -111,5 +111,15 @@ def response_test():
     first_word = response.text.split(" ")[0]
     print(first_word)
 
+def stop_words():
+    load_dotenv()
+    api_key = os.getenv("OPENAI_API_KEY")
+    Settings.llm = llamaOpenAI(model="gpt-3.5-turbo", api_key=api_key)
+    prompt = "translate the following english text into german: 'Hello, how are you?'"
+    stop_words = ["wie"]
+    response = Settings.llm.complete(prompt, stop=stop_words)
+    print(response)
+
+
 if __name__ == "__main__":
-    response_test()
+    stop_words()
