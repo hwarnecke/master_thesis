@@ -1,8 +1,19 @@
-value = "ashdashd"
+class Response(dict):
+    """
+    For compatibility reasons with the Llamaindex response class.
+    """
+    def __str__(self):
+        return str(self.get("response", None))
 
-lines = value.split("\n")
-query_str = lines[0].split(": ")[1]
-filters = lines[1].split(": ")[1]
 
-print("Query: " + query_str)
-print("filter:" + filters)
+def main():
+    test = {"response": "Hallo"}
+    response = Response(test)
+
+    t = type(response)
+    print(t)
+    print(isinstance(response, dict))
+    print(isinstance(response,Response))
+
+if __name__ == "__main__":
+    main()

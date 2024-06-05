@@ -1,8 +1,13 @@
 import os
+
+from deepeval import assert_test
 from dotenv import load_dotenv
 from llama_index.llms.openai import OpenAI
 from llama_index.core import Settings, get_response_synthesizer, StorageContext, VectorStoreIndex
 from llama_index.vector_stores.elasticsearch import ElasticsearchStore
+from deepeval.metrics import AnswerRelevancyMetric
+from deepeval.metrics import FaithfulnessMetric
+from deepeval.test_case import LLMTestCase
 
 from Agent import Agent
 from QueryTool import QueryTool
@@ -33,9 +38,24 @@ def main():
 
     query = "Wer ist für den Personalausweis zuständig und wie lautet deren Telefonnummer?"
 
-    response = agent(query)
+    response = agent.query(query)
 
+    evaluation(query=query, response=response["answer"], observations=response["observations"])
     print(response)
+
+def evaluation(query: str, response:str, observations: list):
+    answer_relevancy_metric = AnswerRelevancyMetric()
+    faithfulness = FaithfulnessMetric()
+    test_case = LLMTestCase(
+        input = query,
+        actual_output=response,
+        retrieval_context=observations
+    )
+    # faithfulness.measure(test_case)
+    print(faithfulness.reason)
+    print(faithfulness.success)
+    print(str(faithfulness))
+    print(faithfulness.__name__)
 
 
 if __name__ == "__main__":

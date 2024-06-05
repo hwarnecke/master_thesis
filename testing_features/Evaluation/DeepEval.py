@@ -9,6 +9,7 @@ import os
 from dotenv import load_dotenv
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 from llama_index.core import Settings
+from llama_index.core import Response
 
 # there is a direct support for llamaindex in deepeval
 # using these we can directly use the response objects that llamaindex returns
@@ -21,57 +22,72 @@ from deepeval.integrations.llama_index import (
     DeepEvalToxicityEvaluator,
 )
 
-load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
-Settings.llm = OpenAI(model="gpt-3.5-turbo", api_key=api_key)
-
-documents = SimpleDirectoryReader("../data").load_data()
-
-index = VectorStoreIndex.from_documents(documents, show_progress=True)
-
-application = index.as_query_engine()
-
-user_input = "Which grad schools did the author apply for and why?"
-
-response_object = application.query(user_input)
-
-# for a full list and explanations of the metrics look here: https://docs.confident-ai.com/docs/integrations-llamaindex
-answerRelevancyEvaluator = DeepEvalAnswerRelevancyEvaluator()
-faithfulnessEvaluator = DeepEvalFaithfulnessEvaluator()
-contextualRelevancyEvaluator = DeepEvalContextualRelevancyEvaluator()
-summarizationEvaluator = DeepEvalSummarizationEvaluator()
-biasEvaluator = DeepEvalBiasEvaluator()
-toxicityEvaluator = DeepEvalToxicityEvaluator()
 
 
-# summarization Evaluator is probably not needed for my use case
-# bias Evaluator is probably also irrelevant, but I am interested what it does to my use case
-# toxcicity Evaluator is  interesting but also not necessary for my use case
-# Note: when I tested the reranking approach I got two completely different answers to the question.
-#       but this one got perfect scores for the three main metrics. This shows that I should at best include a
-#       reference answer, so I can also check if the answer is correct.
-#       It can very well be that answers are very good, in terms of context-answer relation but not correct because
-#       the context is wrong.
+def old():
+    load_dotenv()
+    api_key = os.getenv("OPENAI_API_KEY")
+    Settings.llm = OpenAI(model="gpt-3.5-turbo", api_key=api_key)
 
-evaluators = {
-    "answerRelevancyEvaluator": answerRelevancyEvaluator,
-    "faithfulnessEvaluator": faithfulnessEvaluator,
-    "contextualRelevancyEvaluator": contextualRelevancyEvaluator,
-    # "summarizationEvaluator": summarizationEvaluator,
-    # "biasEvaluator": biasEvaluator,
-    # "toxicityEvaluator": toxicityEvaluator,
-}
+    documents = SimpleDirectoryReader("../data").load_data()
 
-results = []
-for evaluator in evaluators:
-    #print(evaluator)
-    #evaluation_result = evaluators[evaluator].evaluate_response(query=user_input, response=response_object)
-    #print(evaluation_result.score)
-    #results.extend([evaluation_result.passing, evaluation_result.feedback, evaluation_result.score])
-    #print("\n")
-    name = str(evaluator)
-    #print(type(name))
-    print(name)
+    index = VectorStoreIndex.from_documents(documents, show_progress=True)
 
-#print(results)
+    application = index.as_query_engine()
+
+    user_input = "Which grad schools did the author apply for and why?"
+
+    response_object = application.query(user_input)
+
+    # for a full list and explanations of the metrics look here: https://docs.confident-ai.com/docs/integrations-llamaindex
+    answerRelevancyEvaluator = DeepEvalAnswerRelevancyEvaluator()
+    faithfulnessEvaluator = DeepEvalFaithfulnessEvaluator()
+    contextualRelevancyEvaluator = DeepEvalContextualRelevancyEvaluator()
+    summarizationEvaluator = DeepEvalSummarizationEvaluator()
+    biasEvaluator = DeepEvalBiasEvaluator()
+    toxicityEvaluator = DeepEvalToxicityEvaluator()
+
+    # summarization Evaluator is probably not needed for my use case
+    # bias Evaluator is probably also irrelevant, but I am interested what it does to my use case
+    # toxcicity Evaluator is  interesting but also not necessary for my use case
+    # Note: when I tested the reranking approach I got two completely different answers to the question.
+    #       but this one got perfect scores for the three main metrics. This shows that I should at best include a
+    #       reference answer, so I can also check if the answer is correct.
+    #       It can very well be that answers are very good, in terms of context-answer relation but not correct because
+    #       the context is wrong.
+
+    evaluators = {
+        "answerRelevancyEvaluator": answerRelevancyEvaluator,
+        "faithfulnessEvaluator": faithfulnessEvaluator,
+        "contextualRelevancyEvaluator": contextualRelevancyEvaluator,
+        # "summarizationEvaluator": summarizationEvaluator,
+        # "biasEvaluator": biasEvaluator,
+        # "toxicityEvaluator": toxicityEvaluator,
+    }
+
+    results = []
+    for evaluator in evaluators:
+        # print(evaluator)
+        # evaluation_result = evaluators[evaluator].evaluate_response(query=user_input, response=response_object)
+        # print(evaluation_result.score)
+        # results.extend([evaluation_result.passing, evaluation_result.feedback, evaluation_result.score])
+        # print("\n")
+        name = str(evaluator)
+        # print(type(name))
+        print(name)
+
+    # print(results)
+
+def custom_response():
+    load_dotenv()
+    api_key = os.getenv("OPENAI_API_KEY")
+    Settings.llm = OpenAI(model="gpt-3.5-turbo", api_key=api_key)
+    answerRelevancyEvaluator = DeepEvalAnswerRelevancyEvaluator()
+    query = "Das ist eine Frage?"
+    response = Response(response="Hallo", source_nodes=["strings"])
+    evaluation_result = answerRelevancyEvaluator.evaluate_response(query=query, response=response)
+    print(evaluation_result.score)
+
+if __name__ == "__main__":
+    custom_response()
 

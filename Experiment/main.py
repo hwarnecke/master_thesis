@@ -1,13 +1,10 @@
 from CreateQueryEngines import create_query_engines
 from DataLogging import DataLogging
 import json, tiktoken, os
-from deepeval.integrations.llama_index import (
-    DeepEvalAnswerRelevancyEvaluator,
-    DeepEvalFaithfulnessEvaluator,
-    DeepEvalContextualRelevancyEvaluator,
-)
 from llama_index.core.callbacks import CallbackManager, TokenCountingHandler
 from llama_index.core import Settings
+from deepeval.test_case import LLMTestCase
+from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric, ContextualRelevancyMetric
 
 """
 This is  the main file to run the experiment.
@@ -38,6 +35,10 @@ def run_experiment(questions: str = "questions.json",
     :param retrieval_top_k: how many documents the retriever should fetch (default is 6)
     :param use_query_engines: list of names if only some specific query engines should be used instead of all of them
     :return: No return
+    """
+
+    """
+    Initialize variables and stuff
     """
 
     # the token counter needs to be initialized first, before the query engines
@@ -86,49 +87,20 @@ def run_experiment(questions: str = "questions.json",
     # currently the idea is to store them as a JSON in the format of a list of dictionaries
     questions = json.load(open(questions))
 
-    """
-    create the evaluators and the token counter
-    """
-    # the evaluators
-    # TODO: find the evaluator that compares the two answers against each other
-    threshold = 0.5
-    eval_model = "gpt-4"
-    include_reason = True
-    answerRelevancyEvaluator = DeepEvalAnswerRelevancyEvaluator(threshold=threshold,
-                                                                model=eval_model,
-                                                                include_reason=include_reason)
-
-    faithfulnessEvaluator = DeepEvalFaithfulnessEvaluator(threshold=threshold,
-                                                          model=eval_model,
-                                                          include_reason=include_reason)
-
-    contextualRelevancyEvaluator = DeepEvalContextualRelevancyEvaluator(threshold=threshold,
-                                                                        model=eval_model,
-                                                                        include_reason=include_reason)
-
-    evaluators = [answerRelevancyEvaluator, faithfulnessEvaluator, contextualRelevancyEvaluator]
+    # I ditched the Llamaindex native integration of deepeval in order to include the agent
+    metrics = create_metrics()
 
     # the count is only reset manually, otherwise it would accumulate over multiple queries
     token_counter.reset_counts()
 
     """
-    2. Run the experiment
-
-    The experiment will consist of running a set of questions through the different retrievers
-    This means, iterating through the list of query engines and query each with the same set of questions.
-    For each question the response objects will be put into the DeepEval metrics and the results will be saved.
-    I will also save the question, the response, the tokens used and the retrieved nodes.
-    Additionally, the time it took to answer the question will be measured.
-    All these values will be saved to a csv file with a retriever ID.
-    Some retrievers like the RAG Fusion or the HyDE will have some additional information I want to look at later.
-    I will create a separate file for these as they will have a different structure 
-    and can't be easily compared to the other retrievers.
+    Running the experiment.
     """
+
     print("Starting Experiment")
     current_qe: int = 0
     total_amount = len(query_engines)
     total_amount_questions = len(questions)
-    total_amount_evaluators = len(evaluators)
 
     for qe_id, qe in query_engines.items():
         current_qe += 1
@@ -148,7 +120,7 @@ def run_experiment(questions: str = "questions.json",
             query = question["question"]
 
             response = qe.query(query)
-            nodes: dict[str, str] = extract_source_nodes(response)
+            nodes: dict[str, str] = create_context_log(response)
 
             correct_answer = question["answer"]
 
@@ -156,14 +128,12 @@ def run_experiment(questions: str = "questions.json",
             info = {"ID": qe_id.split("/")[1],  # ignore the part of the ID that is used for the directory
                     "query": query,
                     "response": response,
-                    "correct_answer": correct_answer,
-                    "query_time": qe.query_time,
-                    "generating_time": qe.generating_time,
-                    "total_time": qe.total_time
+                    "correct_answer": correct_answer
                     }
+            times: dict[str, float] = qe.get_time()
+            info.update(times)
 
             # collect additional data if necessary and log them in a separate file
-            # add_path: str = path + "additional_data"
             base_name, extension = os.path.splitext(path)
             add_path: str = f"{base_name}_additional_data{extension}"
             add_data: dict = {}
@@ -179,40 +149,14 @@ def run_experiment(questions: str = "questions.json",
                 data_logger.write_csv(add_data, add_path)
 
             print("\t\tDone querying. Starting Evaluation.")
-            # collect token counts
-            token_embeddings = token_counter.total_embedding_token_count
-            token_prompt = token_counter.prompt_llm_token_count
-            token_completion = token_counter.completion_llm_token_count
-            token_total = token_counter.total_llm_token_count
-            tokens = {"embedding_tokens": token_embeddings,
-                      "prompt_tokens": token_prompt,
-                      "completion_tokens": token_completion,
-                      "total_tokens": token_total}
-            # for testing
-            token_counter.reset_counts()  # do not forget to reset the counts!
 
-            # evaluate the response
-            evaluation = {}
-            current_evaluator = 0
-            for evaluator in evaluators:
-                current_evaluator += 1
-                # turn the results into a dictionary based on the name of the evaluator
-                eval_name = str(evaluator)
-                eval_name = eval_name.replace("Evaluator", "")
-                # in my initial tests this returns only the name itself
-                # but if I run it here it will save the whole type in the csv, so I need to trim it further
-                eval_name = eval_name.split("evaluators.")[1]
-                eval_name = eval_name.split(" object")[0]
+            tokens = collect_tokens(token_counter)
 
-                print(f"\t\tStarting with Evaluator {current_evaluator} out of {total_amount_evaluators}: {eval_name}.")
-                evaluation_result = evaluator.evaluate_response(query=query, response=response)
-
-                results = {eval_name + "_passing": evaluation_result.passing,
-                           eval_name + "_feedback": evaluation_result.feedback,
-                           eval_name + "_score": evaluation_result.score}
-
-                # all results from all evaluators can be stored in the same dictionary
-                evaluation.update(results)
+            context: list = extract_context(response)
+            evaluation = evaluate_response(metrics=metrics,
+                                           input=query,
+                                           actual_output=response,
+                                           retrieval_context=context)
 
             # save the information to disk
             data = {}
@@ -221,6 +165,118 @@ def run_experiment(questions: str = "questions.json",
             data.update(tokens)
             data.update(evaluation)
             data_logger.write_csv(data)
+
+
+def collect_tokens(token_counter) -> dict:
+    """
+    read the token counter and create a dictionary that is ready to be logged
+    :param token_counter:
+    :return:
+    """
+    token_embeddings = token_counter.total_embedding_token_count
+    token_prompt = token_counter.prompt_llm_token_count
+    token_completion = token_counter.completion_llm_token_count
+    token_total = token_counter.total_llm_token_count
+    tokens = {"embedding_tokens": token_embeddings,
+              "prompt_tokens": token_prompt,
+              "completion_tokens": token_completion,
+              "total_tokens": token_total}
+
+    token_counter.reset_counts()  # do not forget to reset the counts!
+    return tokens
+
+def create_metrics() -> list:
+    """
+    create a set of deepeval metrics for the evaluation.
+    They use gpt-4o as standard evaluation model
+    :return:
+    """
+    answer_relevancy_metric = AnswerRelevancyMetric()
+    faithfulness_metric = FaithfulnessMetric()
+    contextual_relevancy_metric = ContextualRelevancyMetric()
+    metrics = [answer_relevancy_metric, faithfulness_metric, contextual_relevancy_metric]
+    return metrics
+
+
+def extract_context(response) -> list[str]:
+    """
+    extracts the context from the response object.
+    differentiates between the qe and the agent by the type of the response object
+    :param response: the response object of the qe
+    :return: a list of source nodes
+    """
+    if isinstance(response,dict):
+        return response["observations"]
+    else:
+        return [node.get_content() for node in response.source_nodes]
+
+
+def evaluate_response(metrics: list, input: str, actual_output: str, retrieval_context: list) -> dict:
+    """
+    evaluate a question on a set of deepeval metrics.
+    :param metrics: the list of deepeval metrics to use
+    :param input: the query
+    :param actual_output: the response of the query engine
+    :param retrieval_context: the nodes used to answer
+    :return: the result in a dict that is ready to be logged
+    """
+    evaluation = {}
+    test_case = LLMTestCase(
+        input=input,
+        actual_output=actual_output,
+        retrieval_context=retrieval_context
+    )
+    total_amount = len(metrics)
+    current = 0
+    for metric in metrics:
+        current += 1
+        name = metric.__name__ + "_metric"
+        name = name.replace(" ", "_")
+        print(f"\t\tStarting with Evaluator {current} out of {total_amount}: {name}.")
+        metric.measure(test_case)
+        score = metric.score
+        reason = metric.reason
+        success = metric.success
+
+        result = {name + "_success": success,
+                  name + "_score": score,
+                  name + "_reason": reason}
+        evaluation.update(result)
+
+    return evaluation
+
+
+def create_context_log(response) -> dict[str, str]:
+    """
+    create a log item for the context information.
+    The agent will have some None values because it logs the observations as source nodes, instead of real source nodes
+    :param response:
+    :return:
+    """
+    if isinstance(response, dict):
+        observations = extract_context(response)
+        n: int = 0
+        source_nodes = {}
+        for observation in observations:
+            n += 1
+            number = f"Node {n}"
+            id_key = number + " ID"
+            id_value = None
+            content_key = number + " content"
+            content_value = observation
+            score_key = number + " score"
+            score_value = None
+            metadata_key = number + " Metadata: Name"
+            metadata_content = None
+            node_dict = {id_key: id_value,
+                         content_key: content_value,
+                         metadata_key: metadata_content,
+                         score_key: score_value}
+            source_nodes.update(node_dict)
+    else:
+        source_nodes = extract_source_nodes(response)
+
+    return source_nodes
 
 
 # TODO: include some metadata (i.e. link) in the logs
@@ -278,4 +334,4 @@ def run_all():
 
 
 if __name__ == "__main__":
-    run_experiment(use_query_engines=["base"])
+    run_experiment(use_query_engines=["agent"])

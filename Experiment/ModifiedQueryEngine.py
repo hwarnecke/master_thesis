@@ -19,9 +19,9 @@ class ModifiedQueryEngine():
         self.use_reranker: bool = False if reranker is None else True
 
         # for measuring the passed time on each query
-        self.query_time: int = 0
-        self.generating_time: int = 0
-        self.total_time: int = 0
+        self.query_time: float = 0
+        self.generating_time: float = 0
+        self.total_time: float = 0
 
         # for the special cases that store extra information like HyDE, Auto or Fusion
         self.hyde_object: dict
@@ -77,3 +77,9 @@ class ModifiedQueryEngine():
         self.total_time = generating_stop_time - start_time
 
         return response_obj
+
+
+    def get_time(self) -> dict[str, float]:
+        return {"query_time": self.query_time,
+                "generating_time": self.generating_time,
+                "total_time": self.total_time}

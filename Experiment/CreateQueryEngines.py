@@ -15,6 +15,8 @@ from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from CombinedRetriever import CombinedRetriever
 from FusionRetriever import FusionRetriever
 from ModifiedQueryEngine import ModifiedQueryEngine
+from Agent import Agent
+from QueryTool import QueryTool
 
 def generateID(name: str, llm: str, embedding: str, timestamp: str, prompt: str) -> str:
     """
@@ -147,8 +149,9 @@ def create_query_engines(llm: str = "gpt-3.5-turbo",
     """
     1. the base query engine without any modifications
     """
-
-    query_base = ModifiedQueryEngine(retriever=basic_retriever, response_synthesizer=basic_response_synthesizer)
+    # here I don't use the basic_retriever I created above, because this one should retrieve fewer documents
+    base_retriever = index.as_retriever(similarity_top_k=rerank_top_n)
+    query_base = ModifiedQueryEngine(retriever=base_retriever, response_synthesizer=basic_response_synthesizer)
 
     name_id = "base"
     retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
@@ -204,6 +207,7 @@ def create_query_engines(llm: str = "gpt-3.5-turbo",
         sys.stdout = old_stdout
     """
     # EDIT: I might want to outsource this into a separate file
+    # TODO: update with the new metadata from the contact files
     # create a vector store info that contains an overview over the metadata
     vector_store_info = VectorStoreInfo(
         content_info="Informationen über die Dienstleistungen der Stadt Osnabrück.",
@@ -304,9 +308,8 @@ def create_query_engines(llm: str = "gpt-3.5-turbo",
     Similar to the AutoRetriever, the stdout needs to be redirected in order to catch the verbose output.
     """
 
-    # TODO: check again how the paper implemented this
-    base_retriever = index.as_retriever(similarity_top_k=5)
-    fusion_retriever = FusionRetriever(retriever=base_retriever)
+    #base_retriever = index.as_retriever(similarity_top_k=5)
+    fusion_retriever = FusionRetriever(retriever=basic_retriever)
     query_fusion = ModifiedQueryEngine(
         retriever=fusion_retriever,
         response_synthesizer=basic_response_synthesizer,
@@ -316,5 +319,16 @@ def create_query_engines(llm: str = "gpt-3.5-turbo",
     name_id = "fusion"
     retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
     query_engines[retriever_id] = query_fusion
+
+    """
+    7. Agent
+    """
+    query_engine = ModifiedQueryEngine(retriever=basic_retriever, response_synthesizer=basic_response_synthesizer)
+    query_tool = QueryTool(query_engine=query_engine)
+    agent = Agent(tools=[query_tool])
+
+    name_id = "agent"
+    retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
+    query_engines[retriever_id] = agent
 
     return query_engines

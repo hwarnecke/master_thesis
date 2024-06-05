@@ -13,3 +13,7 @@ class QueryTool:
         # except:
         #     return "Leider konnte der Input nicht verarbeitet werden."
         return str(self.qe.query(expression))
+
+
+    def get_time(self) -> dict[str, float]:
+        return self.qe.get_time()
