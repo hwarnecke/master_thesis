@@ -33,6 +33,9 @@ class Agent:
         self.generating_time: float = 0
         self.total_time: float = 0
 
+        self.retriever_log: dict[str, any] = {}
+
+
     def __CreateLogItem(self, query: str, inputs: list[str], observations: list[str]) -> dict[str, str]:
         log: dict = {"query": query}
         for i in range(len(inputs)):
@@ -58,8 +61,47 @@ class Agent:
                 "generating_time": self.generating_time + self.query_generating_time,
                 "total_time": self.total_time}
 
+    def __extract_source_nodes(self, response, retrieval_count: int = 1) -> dict[str, str]:
+        """
+        :param response: LlamaIndex Response Object
+        :return: the nodes as dict for data logging
+        """
+        n: int = 0
+        source_nodes = {}
+        all_nodes = response.source_nodes
+        for node in all_nodes:
+            n += 1
+            number = f"Call {retrieval_count} Node {n}"
+            # extract the ID
+            id_key = number + " ID"
+            id_value = node.node_id
+            # the content
+            content_key = number + " content"
+            content_value = node.get_text()
+            # the score
+            score_key = number + " score"
+            score_value = node.get_score()
+            # and the name of the service the node came from
+            metadata_key = number + " Metadata: Name"
+            metadata_content = node.metadata["Name"]
+
+            node_dict = {id_key: id_value,
+                         content_key: content_value,
+                         metadata_key: metadata_content,
+                         score_key: score_value}
+            source_nodes.update(node_dict)
+        return source_nodes
+
+    def __create_retriever_log(self, response, input: str, count: int = 1) -> dict:
+        retrieval_log = self.__extract_source_nodes(response=response, retrieval_count=count)
+        log = {f"Call {count} Input": input, f"Call {count} Observation": str(response)}
+        log.update(retrieval_log)
+        return log
+
+
     def query(self, question: str) -> dict:
         prompt = self.prompt.replace("{question}", question)
+        self.retriever_log = {}
         max_iterations: int = 10
         action_inputs: list[str] = []
         observations: list[str] = []
@@ -91,8 +133,11 @@ class Agent:
                 observation = ""
                 for tool in self.tools:
                     if tool.name == action:
-                        observation += tool(action_input)
+                        response = tool(action_input)
+                        observation += str(response)
                         self.__ExtractTime(tool)
+                        retriever_log = self.__create_retriever_log(response=response, input=action_input, count=i+1)
+                        self.retriever_log.update(retriever_log)
 
 
                 action_inputs.append(action_input)
@@ -108,17 +153,21 @@ class Agent:
                 except:
                     answer = "Es tut mir leid, ich konnte keine finale Antwort finden."
 
-                log = self.__CreateLogItem(question, action_inputs, observations)
-                result: dict = Response({"thought_process": prompt,
+                thought_process = prompt.split("Beginne!\n\n\n")[1]     # remove the unnecessary prompt template
+                result: dict = Response({"thought_process": thought_process,
                                          "response": answer,
-                                         "log": log,
+                                         "query": question,
+                                         "retriever_log": self.retriever_log,
                                          "observations": observations})
                 return result
 
         # if no final answer is reached by now it means that he tried to do more than the max_iteration steps
         answer_template: str = "Vielleicht musst du doch selber nachdenken..."
-        log = self.__CreateLogItem(question, action_inputs, observations)
-        result: dict = Response({"thought_process": prompt, "response": answer_template, "log": log})
+        thought_process = prompt.split("Beginne!\n\n\n")[1]
+        result: dict = Response({"thought_process": thought_process,
+                                 "response": answer_template,
+                                 "query": question,
+                                 "retriever_log": self.retriever_log})
         return result
 
 

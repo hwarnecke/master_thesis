@@ -7,12 +7,12 @@ class QueryTool:
         self.name = "Query Engine"
         self.qe = query_engine
 
-    def __call__(self, expression: str) -> str:
+    def __call__(self, expression: str):
         # try:
         #     return self.qe.query(expression)
         # except:
         #     return "Leider konnte der Input nicht verarbeitet werden."
-        return str(self.qe.query(expression))
+        return self.qe.query(expression)
 
 
     def get_time(self) -> dict[str, float]:

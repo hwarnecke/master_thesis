@@ -136,15 +136,7 @@ def run_experiment(questions: str = "questions.json",
             # collect additional data if necessary and log them in a separate file
             base_name, extension = os.path.splitext(path)
             add_path: str = f"{base_name}_additional_data{extension}"
-            add_data: dict = {}
-
-            if "auto" in qe_id:
-                add_data: dict = qe.verbose_output
-            elif "fusion" in qe_id:
-                add_data: dict = qe.retriever.generated_questions
-            elif "hyde" in qe_id:
-                add_data: dict = qe.hyde_object
-
+            add_data: dict[str, any] = create_additional_log(qe_id=qe_id, qe=qe, response=response)
             if add_data:
                 data_logger.write_csv(add_data, add_path)
 
@@ -166,6 +158,22 @@ def run_experiment(questions: str = "questions.json",
             data.update(evaluation)
             data_logger.write_csv(data)
 
+
+def create_additional_log(qe_id: str, qe, response) -> dict[str, any]:
+    if "auto" in qe_id:
+        add_data: dict = qe.verbose_output
+    elif "fusion" in qe_id:
+        add_data: dict = qe.retriever.generated_questions
+    elif "hyde" in qe_id:
+        add_data: dict = qe.hyde_object
+    elif "agent" in qe_id:
+        add_data: dict = {"query": response["query"]}
+        add_data["thought_process"] = response["thought_process"]
+        add_data.update(response["retriever_log"])
+    else:
+        add_data = {}
+
+    return add_data
 
 def collect_tokens(token_counter) -> dict:
     """
@@ -201,7 +209,8 @@ def create_metrics() -> list:
 def extract_context(response) -> list[str]:
     """
     extracts the context from the response object.
-    differentiates between the qe and the agent by the type of the response object
+    differentiates between the qe and the agent by the type of the response object.
+    Mainly used to pass the nodes to the deepeval metrics.
     :param response: the response object of the qe
     :return: a list of source nodes
     """
@@ -334,4 +343,9 @@ def run_all():
 
 
 if __name__ == "__main__":
-    run_experiment(use_query_engines=["agent"])
+    custom_qa_path = "PromptTemplates/german_qa_template.txt"
+    custom_refine_path = "PromptTemplates/german_refine_template.txt"
+
+    run_experiment(custom_qa_path=custom_qa_path,
+                   custom_refine_path=custom_refine_path,
+                   use_query_engines=["agent"])

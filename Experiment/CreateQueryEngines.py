@@ -116,6 +116,7 @@ def create_query_engines(llm: str = "gpt-3.5-turbo",
         - auto
         - hyde
         - fusion
+        - agent
         
     2. the LLM used
         - gpt3 for gpt-3.5-turbo
@@ -123,8 +124,10 @@ def create_query_engines(llm: str = "gpt-3.5-turbo",
         - if local models are later added, I'll add a description here
         
     3. the embedding used
-        - default if no special embedding is used
-        - if a special embedding is used, I'll add a description here
+        will use the name that is also used on HuggingFace and shorten it to one keyword
+        the keyword will be whatever is after the initial '/' and the first '-'
+        i.e. 'OpenAI/text-embedding-ada-002' will turn into 'text'
+        
         
     4. a timestamp to make sure that the ID is unique over multiple runs
     """
@@ -323,7 +326,7 @@ def create_query_engines(llm: str = "gpt-3.5-turbo",
     """
     7. Agent
     """
-    query_engine = ModifiedQueryEngine(retriever=basic_retriever, response_synthesizer=basic_response_synthesizer)
+    query_engine = ModifiedQueryEngine(retriever=base_retriever, response_synthesizer=basic_response_synthesizer)
     query_tool = QueryTool(query_engine=query_engine)
     agent = Agent(tools=[query_tool])
 
