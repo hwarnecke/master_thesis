@@ -342,10 +342,19 @@ def run_all():
                            llm=llm)
 
 
+def run_single_qe(name: str):
+    custom_qa_path = "PromptTemplates/german_qa_template.txt"
+    custom_refine_path = "PromptTemplates/german_refine_template.txt"
+
+    run_experiment(custom_qa_path=custom_qa_path,
+                   custom_refine_path=custom_refine_path)
+
+
+
+
 if __name__ == "__main__":
     custom_qa_path = "PromptTemplates/german_qa_template.txt"
     custom_refine_path = "PromptTemplates/german_refine_template.txt"
 
     run_experiment(custom_qa_path=custom_qa_path,
-                   custom_refine_path=custom_refine_path,
-                   use_query_engines=["agent"])
+                   custom_refine_path=custom_refine_path)

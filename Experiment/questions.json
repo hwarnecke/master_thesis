@@ -1,4 +1,50 @@
 [
-{"question": "Wie teuer is ein Personalausweis?",
-  "answer": "28,80€"}
+  {
+    "question": "Wie teuer ist eine Umweltplakette?",
+    "answer":  "Eine Umweltplakette kostet 5,10€"
+  },
+  {
+    "question":  "Welche Fristen muss ich beim Anmelden von Osterfeuern beachten?",
+    "answer":  "Der Antrag muss beim Fachbereich Umwelt und Klimaschutz der Stadt Osnabrück spätestens 2 Wochen vor Ostern vorliegen."
+  },
+    {
+    "question": "Wo findet Dienstags der Wochenmarkt statt?",
+    "answer": "An der Lerchenstraße von 08:00 bis 13:00."
+  },
+  {
+    "question": "Kann ich meinen ausländischen Jagdschein in Deutschland nutzen?",
+    "answer": "Nein, nichtdeutsche Jagdscheine berechtigen weder zur Jagd noch zum Waffenerwerb."
+  },
+    {
+    "question": "Wer ist für die Geldwäscheprävention zuständig und wo haben sie ihren Standort?",
+    "answer": "Für Geldwäscheprävention ist die Einrichtung Gewerbe zuständig. Diese sitzen im Stadthaus 1 am Natruper-Tor-Wall 2."
+  },
+  {
+    "question": "Wen muss ich anrufen, wenn ich ein Führungszeugnis brauche?",
+    "answer": "Für Führungszeugnisse ist das Bürgeramt zuständig. Die Telefonnummer lautet 0541 323-2100."
+  },
+  {
+    "question": "Für welche Dienstleistungen ist die Jugendbildung zuständig und worum geht es bei den Dienstleistungen?",
+    "answer": "Die Jugendbildung ist für die Freiwilligendienste, das Und-Tschüss-Programm und den Ferienpass zuständig. Bei den Freiwilligendiensten geht es um Möglichkeiten wie sich Jugendliche und Familien freiwillig engagieren können. Das Und-Tschüss-Programm bietet Freizeitfahrten, Erlebniswochenenden und Tagesausflüge für Kinder, Jugendliche und Familien. Der Ferienpass dreht sich um das umfangreiche Ferienprogramm, das die Stadt Osnabrück für alle Kinder und Jugendlichen anbietet."
+  },
+  {
+    "question": "Wer sind die Kontaktpersonen wenn ich meine deutsche Staatsangehörigkeit beibehalten möchte?",
+    "answer": "Kontaktpersonen sind Frau Hellmann, Herr Dieckmann, Frau Vathauer, Frau Kocas und Frau Hielscher."
+  },
+  {
+    "question": "Ich habe ein Baby bekommen, was mache ich jetzt?",
+    "answer": "Das Kind muss innerhalb einer Woche beim Standesamt angemeldet werden."
+  },
+  {
+    "question": "Ich bin Schüler und brauche Geld, was kann ich tun?",
+    "answer": "Grundsätzlich können Schülerinnen und Schüler, die einen berufsqualifizierenden Abschluss oder einen weiterführenden Schulabschluss erreichen wollen, BAföG beziehen. Für diejenigen, die eine allgemeinbildende Schule besuchen, gilt das aber erst ab Klasse 10 und auch nur, wenn eine Unterbringung außerhalb des Elternhauses notwendig ist. Das ist der Fall, wenn der gewünschte Abschluss nicht in der Nähe gemacht werden kann."
+  },
+  {
+    "question": "Mein Lappen ist weg, wie bekomme ich den wieder?",
+    "answer": "Um einen entzogenen Führerschein wieder zu bekommen muss eine Neuerteilung beantragt werden. Dafür ist ein Personalausweis und ein Führungszeugnis notwendig. Außerdem werden 155,30€ für die Fahrerlaubnis und 13€ für das Führungszeugnis fällig."
+  },
+  {
+    "question": "What documents do I need to get a visa for foreign students?",
+    "answer": "In der Regel werden folgende Unterlagen benötigt:\n- ausgefülltes Antragsformular\n- gültiger Nationalpass\n- ein Passfoto\n- Immatrikulationsbescheinigung\n- Bescheinigung über die voraussichtliche Studiendauer\n- Nachweis über Krankenversicherungsschutz\n- Finanzierungsnachweis, in der Regel Kontoauszüge der letzten drei Monate\n- Mietvertrag oder Einzugsbestätigung des Vermieters"
+  }
 ]
