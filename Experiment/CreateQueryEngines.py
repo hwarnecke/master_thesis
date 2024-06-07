@@ -210,7 +210,6 @@ def create_query_engines(llm: str = "gpt-3.5-turbo",
         sys.stdout = old_stdout
     """
     # EDIT: I might want to outsource this into a separate file
-    # TODO: update with the new metadata from the contact files
     # create a vector store info that contains an overview over the metadata
     vector_store_info = VectorStoreInfo(
         content_info="Informationen über die Dienstleistungen der Stadt Osnabrück.",
@@ -222,7 +221,7 @@ def create_query_engines(llm: str = "gpt-3.5-turbo",
             ),
             MetadataInfo(
                 name="Name",
-                description="Der Name der Dienstleistung.",
+                description="Der Name der Dienstleistung, des Kontakts oder der Einrichtung.",
                 type="String",
             ),
             MetadataInfo(
@@ -233,7 +232,7 @@ def create_query_engines(llm: str = "gpt-3.5-turbo",
             MetadataInfo(
                 name="Kategorie",
                 description="Die Kategorie, zu der die Dienstleistung gehört.",
-                type="String or list[String]",
+                type="String or list[str]",
             ),
             MetadataInfo(
                 name="Anfangsbuchstabe",
@@ -243,7 +242,7 @@ def create_query_engines(llm: str = "gpt-3.5-turbo",
             MetadataInfo(
                 name="Synonyme",
                 description="Synonyme für den Namen der Dienstleistung.",
-                type="list[String]",
+                type="list[str]",
             ),
             MetadataInfo(
                 name="Fachbereich",
@@ -260,6 +259,11 @@ def create_query_engines(llm: str = "gpt-3.5-turbo",
                 description="Die URL des Kontakts für die Dienstleistung.",
                 type="String",
             ),
+            MetadataInfo(
+                name="Dienstleistungen",
+                description="Die Dienstleistungen für die dieser Kontakt oder diese Einrichtung zuständig ist.",
+                type="list[str]"
+            )
         ],
     )
 
