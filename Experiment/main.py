@@ -5,6 +5,7 @@ from llama_index.core.callbacks import CallbackManager, TokenCountingHandler
 from llama_index.core import Settings
 from deepeval.test_case import LLMTestCase
 from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric, ContextualRelevancyMetric
+from Agent import Response
 
 """
 This is  the main file to run the experiment.
@@ -119,7 +120,13 @@ def run_experiment(questions: str = "questions.json",
 
             query = question["question"]
 
-            response = qe.query(query)
+            # the auto retriever through an error because it tried using non-existent metadata as filter
+            # I might be able to catch that for now and find a fix for that later:
+            try:
+                response = qe.query(query)
+            except Exception as e:
+                response = Response({"observation": f"Error: {str(e)}"})
+                
             nodes: dict[str, str] = create_context_log(response)
 
             correct_answer = question["answer"]
@@ -242,7 +249,23 @@ def evaluate_response(metrics: list, input: str, actual_output: str, retrieval_c
         name = metric.__name__ + "_metric"
         name = name.replace(" ", "_")
         print(f"\t\tStarting with Evaluator {current} out of {total_amount}: {name}.")
-        metric.measure(test_case)
+
+        # the metrics fail if the output is not a valid JSON format.
+        # Since LLMs can sometimes be unpredictable in their outcome this usually fails at some point.
+        # I hope that it is fixed by simply giving the LLM a few chances to generate a valid JSON,
+        # but the amount of tries are limited in order to avoid an endless loop
+        max_attempts = 6
+        attempts = 0
+        while attempts < max_attempts:
+            try:
+                metric.measure(test_case)
+                break
+            except ValueError as e:
+                attempts += 1
+                if attempts == max_attempts:
+                    raise e
+                print("\t\t...invalid JSON, try again...")
+
         score = metric.score
         reason = metric.reason
         success = metric.success
