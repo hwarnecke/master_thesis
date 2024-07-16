@@ -126,7 +126,7 @@ def run_experiment(questions: str = "questions.json",
                 response = qe.query(query)
             except Exception as e:
                 response = Response({"observation": f"Error: {str(e)}"})
-                
+
             nodes: dict[str, str] = create_context_log(response)
 
             correct_answer = question["answer"]

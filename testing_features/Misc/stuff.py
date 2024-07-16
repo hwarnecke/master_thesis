@@ -45,5 +45,9 @@ Frage: {question}
     last = string.split("Beginne!\n\n\n")[1]
     print(last)
 
+def loops():
+    for i in range(1):
+        print(i)
+
 if __name__ == "__main__":
-    stringtest()
+    loops()
