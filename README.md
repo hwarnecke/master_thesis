@@ -9,7 +9,7 @@ I recommend creating a conda environment, as the requirement.txt only accounts f
 1. create a new conda  environment
    
    ```shell
-   conda create -n python=3.12 master_thesis
+   conda create -n master_thesis python=3.12.2
    ```
 
 2. activate conda environment
@@ -29,19 +29,8 @@ I recommend creating a conda environment, as the requirement.txt only accounts f
    ```shell
    pip install -r requirements.txt
    ```
-
-5. You might also need to install some of the local python packages so that they can be imported from different folders. Currently there is only the on in data_handling.
-   To install the package go into the folder with the setup.py file 
    
-   ```shell
-   cd data_handling
-   ```
    
-   and run:
-   
-   ```shell
-   pip install .
-   ```
 
 ## Folder Structure
 
@@ -49,9 +38,9 @@ The folder testing_features contains different scripts that test different featu
 
 The data_handling folder contains different scripts that are or were used to fetch data and create permanent llama_index compatible data stores, mostly using ElasticSearch.
 
-When first cloning this repository you probably need to create the data store before running any RAG system. You can find the files for that in data_handling/DataStores/.
+When first cloning this repository you probably need to create the data store before running any RAG system. You can find the files for that in **data_handling/DataStores/**.
 
-All files relating to the experiment itself can be found in the Experiment folder.
+**All files relating to the experiment itself can be found in the Experiment folder**.
 
 ## Creating the Datastore Index
 
@@ -84,3 +73,13 @@ docker compose down city_service
 
 Since this Experiment mostly uses OpenAI LLMs both for the RAG system as well as the evaluators, an OpenAI API key is needed.
 The key needs to be provided in an .env file under the tag ``OPENAI_API_KEY``.
+
+
+
+# Experiment
+
+The main experiment can be found under `Experiment/main.py`
+
+It runs a set of questions through different query engines, evaluates them based on deepeval and logs the results.
+
+Different parameter can be specified that handle the LLM, Embedding, questions, prompts, query engines and more.
