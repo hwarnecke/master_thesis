@@ -31,7 +31,7 @@ class ITER_RETGEN:
 
     def query(self, query: str):
         modified_query = query
-        answer = "Wer das liest ist doof."
+        #answer = "Wer das liest ist doof."
         self.additional_log.update({"query": query})
 
         for i in range(self.max_iterations):
@@ -40,11 +40,11 @@ class ITER_RETGEN:
             self.query_time += retrieval_time
 
             # generation
-            answer, generation_time = self.__measure_time(self.generator.synthesize, [query, documents])
+            answer, generation_time = self.__measure_time(self.generator.synthesize, query=query, nodes=documents)
             self.generating_time += generation_time
 
             # updating query for generation augmented retrieval
-            modified_query = query + " " + answer
+            modified_query = query + " " + str(answer)
 
             # logging the current iteration for later
             self.__log_iteration(answer, i)

@@ -148,7 +148,7 @@ def run_experiment(questions: str = "questions.json",
             if add_data:
                 data_logger.write_csv(add_data, add_path)
 
-            print("\t\tDone querying. Starting Evaluation.")
+            print("\t\tDone querying.")
 
             tokens = collect_tokens(token_counter)
             # collect information into a single dict
@@ -159,12 +159,15 @@ def run_experiment(questions: str = "questions.json",
 
             # evaluation is toggleable, because it takes a lot of API tokens and is not necessary for testing
             if evaluate:
+                print("\t\tStarting Evaluation.")
                 context: list = extract_context(response)
                 evaluation = evaluate_response(metrics=metrics,
                                                input=query,
                                                actual_output=response,
                                                retrieval_context=context)
                 data.update(evaluation)
+            else:
+                print("\t\tSkipping Evaluation.")
 
             # save the information to disk
             data_logger.write_csv(data)
