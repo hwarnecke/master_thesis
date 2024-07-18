@@ -23,7 +23,8 @@ def run_experiment(questions: str = "questions.json",
                    llm: str = "gpt-3.5-turbo",
                    rerank_top_n: int = 3,
                    retrieval_top_k: int = 6,
-                   use_query_engines: list[str] = None
+                   use_query_engines: list[str] = None,
+                   evaluate: bool = True
                    ):
     """
     Set up and run the experiment. The following parameters can be changed:
@@ -150,19 +151,22 @@ def run_experiment(questions: str = "questions.json",
             print("\t\tDone querying. Starting Evaluation.")
 
             tokens = collect_tokens(token_counter)
-
-            context: list = extract_context(response)
-            evaluation = evaluate_response(metrics=metrics,
-                                           input=query,
-                                           actual_output=response,
-                                           retrieval_context=context)
-
-            # save the information to disk
+            # collect information into a single dict
             data = {}
             data.update(info)
             data.update(nodes)
             data.update(tokens)
-            data.update(evaluation)
+
+            # evaluation is toggleable, because it takes a lot of API tokens and is not necessary for testing
+            if evaluate:
+                context: list = extract_context(response)
+                evaluation = evaluate_response(metrics=metrics,
+                                               input=query,
+                                               actual_output=response,
+                                               retrieval_context=context)
+                data.update(evaluation)
+
+            # save the information to disk
             data_logger.write_csv(data)
 
 
@@ -370,14 +374,14 @@ def run_single_qe(name: str):
     custom_refine_path = "PromptTemplates/german_refine_template.txt"
 
     run_experiment(custom_qa_path=custom_qa_path,
-                   custom_refine_path=custom_refine_path)
+                   custom_refine_path=custom_refine_path,
+                   questions="test_questions.json",
+                   evaluate=False,
+                   embedding="T-Systems-onsite/cross-en-de-roberta-sentence-transformer",
+                   use_query_engines=[name])
 
 
 
 
 if __name__ == "__main__":
-    custom_qa_path = "PromptTemplates/german_qa_template.txt"
-    custom_refine_path = "PromptTemplates/german_refine_template.txt"
-
-    run_experiment(custom_qa_path=custom_qa_path,
-                   custom_refine_path=custom_refine_path)
+    run_single_qe("iter_retgen")

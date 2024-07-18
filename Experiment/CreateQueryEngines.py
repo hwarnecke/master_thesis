@@ -17,6 +17,8 @@ from FusionRetriever import FusionRetriever
 from ModifiedQueryEngine import ModifiedQueryEngine
 from Agent import Agent
 from QueryTool import QueryTool
+from ITER_RETGEN import ITER_RETGEN
+
 
 def generateID(name: str, llm: str, embedding: str, timestamp: str, prompt: str) -> str:
     """
@@ -337,5 +339,13 @@ def create_query_engines(llm: str = "gpt-3.5-turbo",
     name_id = "agent"
     retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
     query_engines[retriever_id] = agent
+
+    """
+    8. ITER-RETGEN
+    """
+    iter_retgen = ITER_RETGEN(retriever=basic_retriever, generator=basic_response_synthesizer, reranker=reranker)
+    name_id = "iter_retgen"
+    retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
+    query_engines[retriever_id] = iter_retgen
 
     return query_engines

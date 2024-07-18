@@ -1,5 +1,6 @@
 import time
 from typing import Tuple
+from llama_index.core import QueryBundle
 
 class ITER_RETGEN:
     """
@@ -9,7 +10,7 @@ class ITER_RETGEN:
     generate an answer and then retrieve new documents with a combination of the previous answer and the query
     iterative process that could go on for multiple steps
     """
-    def __init__(self, retriever, generator, max_iterations: int = 2):
+    def __init__(self, retriever, generator, reranker = None, max_iterations: int = 2):
         """
 
         :param retriever:
@@ -18,6 +19,8 @@ class ITER_RETGEN:
         self.retriever = retriever
         self.generator = generator
         self.max_iterations = max_iterations
+        self.reranker = reranker
+        self.use_reranker = False if reranker is None else True
 
         # for data logging
         self.generating_time: float = 0
@@ -29,16 +32,16 @@ class ITER_RETGEN:
     def query(self, query: str):
         modified_query = query
         answer = "Wer das liest ist doof."
+        self.additional_log.update({"query": query})
 
         for i in range(self.max_iterations):
             # retrieval
-            documents, retrieval_time = self.__measure_time(self.retriever.retrieve, modified_query)
+            documents, retrieval_time = self.__measure_time(self.__retrieve, modified_query)
             self.query_time += retrieval_time
 
             # generation
             answer, generation_time = self.__measure_time(self.generator.synthesize, [query, documents])
             self.generating_time += generation_time
-            self.all_answers.append(answer)
 
             # updating query for generation augmented retrieval
             modified_query = query + " " + answer
@@ -47,6 +50,18 @@ class ITER_RETGEN:
             self.__log_iteration(answer, i)
 
         return answer
+
+    def __retrieve(self, query: str) -> list[any]:
+        """
+        simple wrapper function to include a reranker
+        :param query:
+        :return:
+        """
+        query_bundle = QueryBundle(query)
+        nodes = self.retriever.retrieve(query)
+        if self.use_reranker:
+            nodes = self.reranker.postprocess_nodes(nodes, query_bundle)
+        return nodes
 
     def __measure_time(self, func, *args, **kwargs) -> Tuple[any, float]:
         """
@@ -106,11 +121,10 @@ class ITER_RETGEN:
             source_nodes.update(node_dict)
         return source_nodes
 
-
     def get_time(self) -> dict[str, float]:
         return {"query_time": self.query_time,
                 "generating_time": self.generating_time,
                 "total_time": self.total_time}
 
-    def get_log(self) -> dict[str,any]:
+    def get_log(self) -> dict[str, any]:
         return self.additional_log
