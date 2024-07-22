@@ -120,6 +120,13 @@ def stop_words():
     response = Settings.llm.complete(prompt, stop=stop_words)
     print(response)
 
+def new_model():
+    load_dotenv()
+    api_key = os.getenv("OPENAI_API_KEY")
+    Settings.llm = llamaOpenAI(model = "gpt-4o-mini")
+    response = Settings.llm.complete("Who are you?")
+    print(response)
+
 
 if __name__ == "__main__":
-    stop_words()
+    new_model()
