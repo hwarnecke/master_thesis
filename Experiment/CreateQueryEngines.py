@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import datetime
 from llama_index.core import Settings, get_response_synthesizer, VectorStoreIndex, StorageContext
 from llama_index.llms.openai import OpenAI
+from llama_index.llms.ollama import Ollama
 from llama_index.vector_stores.elasticsearch import ElasticsearchStore
 from llama_index.core.postprocessor import SentenceTransformerRerank
 from llama_index.retrievers.bm25 import BM25Retriever
@@ -37,7 +38,7 @@ def generateID(name: str, llm: str, embedding: str, timestamp: str, prompt: str)
     """
     return f"{timestamp}_{llm}_{embedding}_{prompt}/{name}_{llm}_{embedding}_{prompt}_{timestamp}"
 
-def create_query_engines(llm: str = "gpt-3.5-turbo",
+def create_query_engines(llm: str = "gpt-40-mini",
                          embedding_name: str ="OpenAI/text-embedding-ada-002",
                          embedding_url: str = "http://localhost:9200",
                          rerank_top_n: int = 3,
@@ -64,7 +65,13 @@ def create_query_engines(llm: str = "gpt-3.5-turbo",
     """
     load_dotenv()
     api_key = os.getenv("OPENAI_API_KEY")
-    Settings.llm = OpenAI(model=llm, api_key=api_key)   # needs to be more general for a local model to be used
+    # a bit crude because it locks me out of GPT-3.5 but welp, it is how it is
+    if "gpt-4" in llm:
+        Settings.llm = OpenAI(model=llm, api_key=api_key)
+        print(f"using OpenAI with {llm}.")
+    else:
+        Settings.llm = Ollama(model=llm, request_timeout=600)
+        print(f"using Ollama with {llm}.")
 
     # TODO: when creating the ES store, make sure to follow the naming pattern
     vector_store_name = "service_" + embedding_name.split("/")[1]
@@ -135,9 +142,9 @@ def create_query_engines(llm: str = "gpt-3.5-turbo",
     """
 
     # the llm used
-    llm_id = "llm"
-    if llm == "gpt-3.5-turbo":
-        llm_id = "gpt3"
+    llm_id = llm
+    if llm == "gpt-40-mini":
+        llm_id = "gpt4mini"
     elif llm == "gpt-4-turbo":
         llm_id = "gpt4"
 

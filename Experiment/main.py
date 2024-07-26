@@ -20,7 +20,7 @@ def run_experiment(questions: str = "questions.json",
                    custom_qa_path: str = None,
                    custom_refine_path: str = None,
                    embedding: str = "OpenAI/text-embedding-ada-002",
-                   llm: str = "gpt-3.5-turbo",
+                   llm: str = "gpt-4o-mini",
                    rerank_top_n: int = 3,
                    retrieval_top_k: int = 6,
                    use_query_engines: list[str] = None,
@@ -45,8 +45,10 @@ def run_experiment(questions: str = "questions.json",
 
     # the token counter needs to be initialized first, before the query engines
     # otherwise it will log nothing
+    # also, it seems like using the default tokenizer might work best for using different models, even if it isn't
+    # perfect for all of them
     token_counter = TokenCountingHandler(
-        tokenizer=tiktoken.encoding_for_model(llm).encode,
+        #tokenizer=tiktoken.encoding_for_model(llm).encode,
         verbose=False,
     )
     Settings.callback_manager = CallbackManager([token_counter])
@@ -372,19 +374,23 @@ def run_all():
                            llm=llm)
 
 
-def run_single_qe(name: str):
+def run_single_qe(name: str = None):
     custom_qa_path = "PromptTemplates/german_qa_template.txt"
     custom_refine_path = "PromptTemplates/german_refine_template.txt"
+    qes = None
+    if name:
+        qes = [name]
 
     run_experiment(custom_qa_path=custom_qa_path,
                    custom_refine_path=custom_refine_path,
-                   questions="test_questions.json",
+                   questions="questions.json",
                    evaluate=False,
+                   llm="sauerkraut_q4",
                    embedding="T-Systems-onsite/cross-en-de-roberta-sentence-transformer",
-                   use_query_engines=[name])
+                   use_query_engines=qes)
 
 
 
 
 if __name__ == "__main__":
-    run_single_qe("iter_retgen")
+    run_single_qe()
