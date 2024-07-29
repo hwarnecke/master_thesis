@@ -78,6 +78,9 @@ def create_query_engines(llm: str = "gpt-40-mini",
     if not embedding_name == "OpenAI/text-embedding-ada-002":
         embedding_model = HuggingFaceEmbedding(model_name=embedding_name)
         Settings.embed_model = embedding_model
+        print(f"using HuggingFaceEmbedding with {embedding_name}.")
+    else:
+        print(f"using OpenAI embedding with {embedding_name}.")
     # for the model ID I pick a very short abbreviation in order to keep the file names shorter
     embedding_id = embedding_name.split("/")[1].split("-")[0]
 

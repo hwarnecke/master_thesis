@@ -5,13 +5,25 @@ from llama_index.core import Settings
 from llama_index.core.callbacks import CallbackManager, TokenCountingHandler
 from llama_index.core import Settings, get_response_synthesizer, StorageContext, VectorStoreIndex
 from llama_index.vector_stores.elasticsearch import ElasticsearchStore
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 def main():
+    # loading the LLM alone seems fine but if I afterwards try to load the embedding, it creates a cuda OOM error.
+
+    # I'll try loading the embedding first. Ollama should be able to dynamically load less layers into VRAM then
+    # EDIT: still an issue
+    embedding_name = "T-Systems-onsite/cross-en-de-roberta-sentence-transformer"
+    embedding_model = HuggingFaceEmbedding(model_name=embedding_name)
+    Settings.embed_model = embedding_model
+
     start = time.time()
-    llm = Ollama(model="sauerkraut_hero", request_timeout=500.0)
+    #llm = Ollama(model="sauerkraut_hero_q6", request_timeout=500.0)
+    llm = "sauerkraut_hero_q6"
+    Settings.llm = Ollama(model=llm, request_timeout=500)
     loaded = time.time()
     print(f"model loaded after {loaded - start} seconds.")
-    resp = llm.complete("Wer ist Paul Graham?")
+
+    resp = Settings.llm.complete("Wer ist Paul Graham?")
     completed = time.time()
     print(f"Response ready after {completed - loaded} seconds")
     print(resp)
@@ -41,6 +53,13 @@ def token_counting():
         token_counter.total_llm_token_count,
     )
 
+def check_chat():
+    # did that to check if it was a chat with memory, but apparently it is not.
+    llm = Ollama(model="sauerkraut_hero", request_timeout=500.0)
+    while True:
+        prompt = input()
+        answer = llm.complete(prompt)
+        print(answer)
 
 
 if __name__ == "__main__":

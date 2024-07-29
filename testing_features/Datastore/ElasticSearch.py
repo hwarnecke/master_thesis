@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext
 from llama_index.vector_stores.elasticsearch import ElasticsearchStore
 
+from elasticsearch import Elasticsearch
+
 
 """
 This uses Elasticsearch in a docker container to store the index.
@@ -21,28 +23,71 @@ This effectively tells the docker container to store the data in the folder on t
 in-memory only and allows us to reload the data when we restart the container.
 """
 
-# some settings
-load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
-Settings.llm = OpenAI(model="gpt-3.5-turbo", api_key=api_key)
+def old():
+    # some settings
+    load_dotenv()
+    api_key = os.getenv("OPENAI_API_KEY")
+    Settings.llm = OpenAI(model="gpt-3.5-turbo", api_key=api_key)
 
-# create an Elasticsearch index
-es_vector_store = ElasticsearchStore(
-    index_name="thesis_test_store",
-    es_url="http://localhost:9200",
-)
+    # create an Elasticsearch index
+    es_vector_store = ElasticsearchStore(
+        index_name="thesis_test_store",
+        es_url="http://localhost:9200",
+    )
 
-storage_context = StorageContext.from_defaults(vector_store=es_vector_store)
+    storage_context = StorageContext.from_defaults(vector_store=es_vector_store)
 
-# when running it the first time we have to build the index from documents
-# afterwards we can use the vector store directly
-# now I only have to figure out how to actually save that elasticsearch instance to re-launch it later
-#documents = SimpleDirectoryReader("./data").load_data()
-#index = VectorStoreIndex.from_documents(documents, storage_context=storage_context, show_progress=True)
-index = VectorStoreIndex.from_vector_store(vector_store=es_vector_store, storage_context=storage_context, show_progress=True)
+    # when running it the first time we have to build the index from documents
+    # afterwards we can use the vector store directly
+    # now I only have to figure out how to actually save that elasticsearch instance to re-launch it later
+    #documents = SimpleDirectoryReader("./data").load_data()
+    #index = VectorStoreIndex.from_documents(documents, storage_context=storage_context, show_progress=True)
+    index = VectorStoreIndex.from_vector_store(vector_store=es_vector_store, storage_context=storage_context, show_progress=True)
 
-# create a query engine
-query_engine = index.as_query_engine()
-# query the index
-response = query_engine.query("Which grad schools did the author apply for and why?")
-print(response)
+    # create a query engine
+    query_engine = index.as_query_engine()
+    # query the index
+    response = query_engine.query("Which grad schools did the author apply for and why?")
+    print(response)
+
+def elastic():
+    client = Elasticsearch("http://localhost:9200")
+    print(client.info)
+    index_name = "service_cross-en-de-roberta-sentence-transformer"
+
+    match_query = {
+        "query": {
+            "match": {
+                "metadata.Name": "Abbruchanzeige"
+            }
+        }
+    }
+
+    term_query = {
+        "query": {
+            "match": {
+                "metadata.Name.keyword": "Abbruchanzeige"
+            }
+        }
+    }
+
+    query = {
+        "query": {
+            "match_all": {}
+        }
+    }
+
+    response = client.search(index=index_name, body=match_query)
+    #print(response)
+    print(len(response["hits"]["hits"]))
+    # for hit in response['hits']['hits']:
+    #     print(hit['_source']['content'])
+
+    # Get the mapping of the index
+    mapping = client.indices.get_mapping(index="service_cross-en-de-roberta-sentence-transformer")
+    print("Index Mapping:")
+    print(mapping)
+
+
+if __name__ == "__main__":
+    elastic()

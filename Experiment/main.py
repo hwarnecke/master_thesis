@@ -125,12 +125,23 @@ def run_experiment(questions: str = "questions.json",
 
             # the auto retriever through an error because it tried using non-existent metadata as filter
             # I might be able to catch that for now and find a fix for that later:
-            try:
-                response = qe.query(query)
-            except Exception as e:
-                response = Response({"observation": f"Error: {str(e)}"})
+            # TODO: it might be that this changed the response type of other qe and created a lot of issues later
+            #       need to check where those errors came from, so this is removed for now
+            #       The errors might be created because CUDA is OOM.
+            # TODO: Change the try-except block that it catches only the auto-retriever issues and not the OOM ones
+            # try:
+            #     response = qe.query(query)
+            # except Exception as e:
+            #     response = Response({"observation": f"Error: {str(e)}"})
+            response = qe.query(query)
 
-            nodes: dict[str, str] = create_context_log(response)
+            try:
+                nodes: dict[str, str] = create_context_log(response)
+                print(f"Response type: {type(response)}")
+            except Exception as e:
+                print(f"Response type: {type(response)}")
+                print(f"Response: {response}")
+                raise
 
             correct_answer = question["answer"]
 
@@ -374,7 +385,7 @@ def run_all():
                            llm=llm)
 
 
-def run_single_qe(name: str = None):
+def run_qe(name: str = None):
     custom_qa_path = "PromptTemplates/german_qa_template.txt"
     custom_refine_path = "PromptTemplates/german_refine_template.txt"
     qes = None
@@ -385,12 +396,12 @@ def run_single_qe(name: str = None):
                    custom_refine_path=custom_refine_path,
                    questions="questions.json",
                    evaluate=False,
-                   llm="sauerkraut_q4",
-                   embedding="T-Systems-onsite/cross-en-de-roberta-sentence-transformer",
+                   llm="sauerkraut_hero_q6",
+                   embedding="jinaai/jina-embeddings-v2-base-de",
                    use_query_engines=qes)
 
 
 
 
 if __name__ == "__main__":
-    run_single_qe()
+    run_qe()
