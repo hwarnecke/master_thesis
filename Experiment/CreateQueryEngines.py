@@ -129,6 +129,7 @@ def create_query_engines(llm: str = "gpt-40-mini",
         - hyde
         - fusion
         - agent
+        - iter_retgen
         
     2. the LLM used
         - gpt3 for gpt-3.5-turbo
@@ -211,6 +212,8 @@ def create_query_engines(llm: str = "gpt-40-mini",
     """
     4. AutoRetriever
     
+    EDIT: Since this one seems to work like shit, I will exclude it from the main experiment.
+    
     Don't forget to redirect stdout in order to catch the verbose output of the auto retriever.
     Otherwise information about which filter was used gets lost.
     Also don't forget to reset stdout afterwards.
@@ -223,78 +226,78 @@ def create_query_engines(llm: str = "gpt-40-mini",
     """
     # EDIT: I might want to outsource this into a separate file
     # create a vector store info that contains an overview over the metadata
-    vector_store_info = VectorStoreInfo(
-        content_info="Informationen über die Dienstleistungen der Stadt Osnabrück.",
-        metadata_info=[
-            MetadataInfo(
-                name="Typ",
-                description="Der Typ der Information, die in dem Dokument beschrieben ist.",
-                type="String",
-            ),
-            MetadataInfo(
-                name="Name",
-                description="Der Name der Dienstleistung, des Kontakts oder der Einrichtung.",
-                type="String",
-            ),
-            MetadataInfo(
-                name="URL",
-                description="Die URL, unter der die Dienstleistung zu finden ist.",
-                type="String",
-            ),
-            MetadataInfo(
-                name="Kategorie",
-                description="Die Kategorie, zu der die Dienstleistung gehört.",
-                type="String or list[str]",
-            ),
-            MetadataInfo(
-                name="Anfangsbuchstabe",
-                description="Der Anfangsbuchstabe des Namens der Dienstleistung.",
-                type="String",
-            ),
-            MetadataInfo(
-                name="Synonyme",
-                description="Synonyme für den Namen der Dienstleistung.",
-                type="list[str]",
-            ),
-            MetadataInfo(
-                name="Fachbereich",
-                description="Der Fachbereich, zu dem die Dienstleistung gehört.",
-                type="String",
-            ),
-            MetadataInfo(
-                name="Kontakt",
-                description="Der Kontakt für die Dienstleistung.",
-                type="String",
-            ),
-            MetadataInfo(
-                name="Kontakt URL",
-                description="Die URL des Kontakts für die Dienstleistung.",
-                type="String",
-            ),
-            MetadataInfo(
-                name="Dienstleistungen",
-                description="Die Dienstleistungen für die dieser Kontakt oder diese Einrichtung zuständig ist.",
-                type="list[str]"
-            )
-        ],
-    )
-
-    auto_retriever = VectorIndexAutoRetriever(
-        index=index,
-        vector_store_info=vector_store_info,
-        verbose=True,
-    )
-
-    query_auto = ModifiedQueryEngine(
-        retriever=auto_retriever,
-        response_synthesizer=basic_response_synthesizer,
-        reranker=reranker,
-        reroute_stdout=True,
-    )
-
-    name_id = "auto"
-    retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
-    query_engines[retriever_id] = query_auto
+    # vector_store_info = VectorStoreInfo(
+    #     content_info="Informationen über die Dienstleistungen der Stadt Osnabrück.",
+    #     metadata_info=[
+    #         MetadataInfo(
+    #             name="Typ",
+    #             description="Der Typ der Information, die in dem Dokument beschrieben ist.",
+    #             type="String",
+    #         ),
+    #         MetadataInfo(
+    #             name="Name",
+    #             description="Der Name der Dienstleistung, des Kontakts oder der Einrichtung.",
+    #             type="String",
+    #         ),
+    #         MetadataInfo(
+    #             name="URL",
+    #             description="Die URL, unter der die Dienstleistung zu finden ist.",
+    #             type="String",
+    #         ),
+    #         MetadataInfo(
+    #             name="Kategorie",
+    #             description="Die Kategorie, zu der die Dienstleistung gehört.",
+    #             type="String or list[str]",
+    #         ),
+    #         MetadataInfo(
+    #             name="Anfangsbuchstabe",
+    #             description="Der Anfangsbuchstabe des Namens der Dienstleistung.",
+    #             type="String",
+    #         ),
+    #         MetadataInfo(
+    #             name="Synonyme",
+    #             description="Synonyme für den Namen der Dienstleistung.",
+    #             type="list[str]",
+    #         ),
+    #         MetadataInfo(
+    #             name="Fachbereich",
+    #             description="Der Fachbereich, zu dem die Dienstleistung gehört.",
+    #             type="String",
+    #         ),
+    #         MetadataInfo(
+    #             name="Kontakt",
+    #             description="Der Kontakt für die Dienstleistung.",
+    #             type="String",
+    #         ),
+    #         MetadataInfo(
+    #             name="Kontakt URL",
+    #             description="Die URL des Kontakts für die Dienstleistung.",
+    #             type="String",
+    #         ),
+    #         MetadataInfo(
+    #             name="Dienstleistungen",
+    #             description="Die Dienstleistungen für die dieser Kontakt oder diese Einrichtung zuständig ist.",
+    #             type="list[str]"
+    #         )
+    #     ],
+    # )
+    #
+    # auto_retriever = VectorIndexAutoRetriever(
+    #     index=index,
+    #     vector_store_info=vector_store_info,
+    #     verbose=True,
+    # )
+    #
+    # query_auto = ModifiedQueryEngine(
+    #     retriever=auto_retriever,
+    #     response_synthesizer=basic_response_synthesizer,
+    #     reranker=reranker,
+    #     reroute_stdout=True,
+    # )
+    #
+    # name_id = "auto"
+    # retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
+    # query_engines[retriever_id] = query_auto
 
     """
     5. HyDE (Hybrid Document Embedding)

@@ -12,7 +12,7 @@ def main():
 
     # I'll try loading the embedding first. Ollama should be able to dynamically load less layers into VRAM then
     # EDIT: still an issue
-    embedding_name = "T-Systems-onsite/cross-en-de-roberta-sentence-transformer"
+    embedding_name = "jinaai/jina-embeddings-v2-base-de"
     embedding_model = HuggingFaceEmbedding(model_name=embedding_name)
     Settings.embed_model = embedding_model
 
