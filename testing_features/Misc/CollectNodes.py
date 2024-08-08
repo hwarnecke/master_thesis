@@ -4,6 +4,7 @@ from llama_index.llms.openai import OpenAI
 import os
 from dotenv import load_dotenv
 from llama_index.vector_stores.elasticsearch import ElasticsearchStore
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 def main():
     # some settings
@@ -34,11 +35,12 @@ def main():
 
 
 def es_main():
-    embedding_name = "OpenAI/text-embedding-ada-002"
+    embedding_name = "intfloat/multilingual-e5-large-instruct"
     vector_store_name = "service_" + embedding_name.split("/")[1]
-    load_dotenv()
-    api_key = os.getenv("OPENAI_API_KEY")
-    Settings.llm = OpenAI(model="gpt-3.5-turbo", api_key=api_key)
+    #load_dotenv()
+    #api_key = os.getenv("OPENAI_API_KEY")
+    #Settings.llm = OpenAI(model="gpt-3.5-turbo", api_key=api_key)
+    Settings.embed_model = HuggingFaceEmbedding(model_name=embedding_name)
 
     es_vector_store = ElasticsearchStore(
         index_name=vector_store_name,
@@ -52,19 +54,19 @@ def es_main():
         storage_context=storage_context,
         show_progress=False)
 
-    query_engine = index.as_query_engine()
+    #query_engine = index.as_query_engine()
+    retriever = index.as_retriever()
 
-    query = "Was kostet ein Personalausweis?"
+    query = "Wie teuer ist eine Umweltplakette?"
 
-    response = query_engine.query(query)
+    #response = query_engine.query(query)
+    retrieved_nodes = retriever.retrieve(query)
 
-    retrieved_nodes = response.source_nodes
-    # print("Get Text:\n")
-    # print(retrieved_nodes[0].get_text())
-    # print("Get Content:\n")
-    # print(retrieved_nodes[0].get_content())
-    metadata = retrieved_nodes[0].metadata
-    print(metadata["Name"])
+
+    print(retrieved_nodes)
+
+    for node in retrieved_nodes:
+        print(node.id_)
 
 
 if __name__ == "__main__":
