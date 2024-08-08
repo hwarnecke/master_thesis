@@ -1,0 +1,35 @@
+[
+  [
+    {
+      "Name": "Umweltzone",
+      "ID": "24fea85d-c1a4-422e-8e0a-c840742f550d"
+    }
+  ],
+  [
+    {
+      "Name": "Osterfeuer",
+      "ID": "5392798e-d357-43e3-8711-05088055268d"
+    }
+  ],
+  [
+    {
+      "Name": "Märkte",
+      "ID": "42af36eb-6d25-4f35-bd91-34b04c8a0382"
+    }
+  ],
+  [
+    {
+      "Name": "Jagdschein",
+      "ID": "f6716571-aaab-45b2-b438-1cd94236d07b"
+    }
+  ],
+  [
+    {
+      "Name": "Verwaltungsteam Kinder und Jugend",
+      "ID": "59b2e733-0de2-4868-814d-6c54505194bf"
+    },
+    {
+      "Name": ""
+    }
+  ]
+]
