@@ -346,7 +346,7 @@ def extract_source_nodes(response) -> dict[str, str]:
         number = f"Node {n}"
         # extract the ID
         id_key = number + " ID"
-        id_value = node.node_id
+        id_value = node.id_
         # the content
         content_key = number + " content"
         content_value = node.get_text()
