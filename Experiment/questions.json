@@ -16,32 +16,32 @@
     "answer": "Nein, nichtdeutsche Jagdscheine berechtigen weder zur Jagd noch zum Waffenerwerb."
   },
     {
-    "question": "Wer ist für die Geldwäscheprävention zuständig und wo haben sie ihren Standort?",
-    "answer": "Für Geldwäscheprävention ist die Einrichtung Gewerbe zuständig. Diese sitzen im Stadthaus 1 am Natruper-Tor-Wall 2."
+    "question": "Welche Einrichtung ist für die Jugendleiter-Card zuständig und wo haben sie ihren Standort?",
+    "answer": "Für die Jugendleiter-Card ist die Einrichtung Verwaltungsteam Kinder und Jugend zuständig. Diese sitzen im Stadthaus 1 am Natruper-Tor-Wall 2."
   },
   {
-    "question": "Wen muss ich anrufen, wenn ich ein Führungszeugnis brauche?",
-    "answer": "Für Führungszeugnisse ist das Bürgeramt zuständig. Die Telefonnummer lautet 0541 323-2100."
+    "question": "Ich habe Fragen zu einem Tiergehege, wen kann ich anrufen?",
+    "answer": "Für Tiergehege ist Frau Schneider zuständig. Ihre Telefonnummer ist die 0541 323-2331."
   },
   {
-    "question": "Für welche Dienstleistungen ist die Jugendbildung zuständig und worum geht es bei den Dienstleistungen?",
-    "answer": "Die Jugendbildung ist für die Freiwilligendienste, das Und-Tschüss-Programm und den Ferienpass zuständig. Bei den Freiwilligendiensten geht es um Möglichkeiten wie sich Jugendliche und Familien freiwillig engagieren können. Das Und-Tschüss-Programm bietet Freizeitfahrten, Erlebniswochenenden und Tagesausflüge für Kinder, Jugendliche und Familien. Der Ferienpass dreht sich um das umfangreiche Ferienprogramm, das die Stadt Osnabrück für alle Kinder und Jugendlichen anbietet."
+    "question": "Wer ist die Teamleitung für die Straßenreinigung und wie kann ich die Person erreichen?",
+    "answer": "Frau Knopf ist als Teamleitung zuständig. Ihre Telefonnummer lautet 05413233300 und ihre Email ist die osb@osnabrueck.de."
   },
   {
-    "question": "Wer sind die Kontaktpersonen wenn ich meine deutsche Staatsangehörigkeit beibehalten möchte?",
-    "answer": "Kontaktpersonen sind Frau Hellmann, Herr Dieckmann, Frau Vathauer, Frau Kocas und Frau Hielscher."
+    "question": "Ich muss einen neuen Personalausweis, Reisepass und Ersatzführerschein beantragen. Wie teuer ist das jeweils?",
+    "answer": "Der Personalausweis kostet 22,80€. Ein Reisepass kostet 37,50€. Ein Ersatzführerschein kostet 33,60€."
   },
   {
-    "question": "Ich habe ein Baby bekommen, was mache ich jetzt?",
-    "answer": "Das Kind muss innerhalb einer Woche beim Standesamt angemeldet werden."
-  },
-  {
-    "question": "Ich bin Schüler und brauche Geld, was kann ich tun?",
+    "question": "Ich bin Schüler und brauche Geld.",
     "answer": "Grundsätzlich können Schülerinnen und Schüler, die einen berufsqualifizierenden Abschluss oder einen weiterführenden Schulabschluss erreichen wollen, BAföG beziehen. Für diejenigen, die eine allgemeinbildende Schule besuchen, gilt das aber erst ab Klasse 10 und auch nur, wenn eine Unterbringung außerhalb des Elternhauses notwendig ist. Das ist der Fall, wenn der gewünschte Abschluss nicht in der Nähe gemacht werden kann."
   },
   {
-    "question": "Mein Lappen ist weg, wie bekomme ich den wieder?",
+    "question": "Mir wurd der Lappen weggenommen, wie bekomme ich den wieder?",
     "answer": "Um einen entzogenen Führerschein wieder zu bekommen muss eine Neuerteilung beantragt werden. Dafür ist ein Personalausweis und ein Führungszeugnis notwendig. Außerdem werden 155,30€ für die Fahrerlaubnis und 13€ für das Führungszeugnis fällig."
+  },
+  {
+    "question": "Ich ziehe raus aufs Land, brauche ich ein neues Nummernschild?",
+    "answer": "Fahrzeughalter, die ihren Wohnsitz von der Stadt Osnabrück in den Landkreis oder umgekehrt verlagern, benötigen kein neues Autokennzeichen mehr. Sie müssen allerdings der Zulassungsstelle ihre neue Adresse bekannt geben und sich dort neue Fahrzeugpapiere (ZB I und ZB II) mit dem aktuellen Wohnort ausstellen lassen. Hierzu ist auch eine elektronische Versicherungsbestätigung (eVB) erforderlich."
   },
   {
     "question": "What documents do I need to get a visa for foreign students?",
