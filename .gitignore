@@ -11,3 +11,5 @@
 /data_handling/build/
 data_handling/data_handling.egg-info/
 /Experiment/logs/
+/data_handling/DataStores/contact.json
+/data_handling/DataStores/service.json

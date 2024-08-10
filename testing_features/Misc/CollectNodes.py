@@ -1,10 +1,12 @@
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext, Document
 from llama_index.core import Settings
+from llama_index.core.node_parser import SentenceSplitter
 from llama_index.llms.openai import OpenAI
 import os
 from dotenv import load_dotenv
 from llama_index.vector_stores.elasticsearch import ElasticsearchStore
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+import json
 
 def main():
     # some settings
@@ -68,6 +70,31 @@ def es_main():
     for node in retrieved_nodes:
         print(node.id_)
 
+def create_nodes():
+    chunk_size = 512
+    sample_texts = ["Lorem ipsum dolor sit amet", "consectetur adipisici elit"]
+    splitter = SentenceSplitter(chunk_size=chunk_size, chunk_overlap=20)
+    all_nodes = []
+    for sample_text in sample_texts:
+        text_nodes = splitter.get_nodes_from_documents([Document(text=sample_text)])
+        for node in text_nodes:
+            node.metadata = {
+                'Name': "Wild Lorem"
+            }
+            all_nodes.extend(node)
+
+    print(all_nodes)
+
+    path = "text_nodes.json"
+    with open(path, 'w') as file:
+        json.dump(all_nodes, file)
+
+    return all_nodes
+
+def read_nodes():
+    path = "text_nodes.json"
+    with open(path, 'r') as file:
+        return json.load(file)
 
 if __name__ == "__main__":
-    es_main()
+    create_nodes()

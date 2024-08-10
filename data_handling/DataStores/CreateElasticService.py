@@ -29,14 +29,15 @@ To stop the container, use:
 
 
 def create_index(models: list,
-                 es_url: str = "http://localhost:9200"):
+                 es_url: str = "http://localhost:9200",
+                 load_from_disc: bool = False):
     load_dotenv()
     open_ai_key = os.getenv("OPENAI_API_KEY")
     hugging_face_key = os.getenv("HF_API_KEY")
 
     # load the City Service data
     scraper = ServiceScraper()
-    nodes = scraper.ScrapeServicePage(chunk_size=512)
+    nodes = scraper.ScrapeServicePage(chunk_size=512, load_from_disc=load_from_disc)
 
     for model in models:
 
@@ -56,8 +57,8 @@ def create_index(models: list,
         try:
             index = VectorStoreIndex(nodes=nodes, storage_context=storage_context, show_progress=True)
             print(f"Succeded: {name}")
-        except:
-            print(f"failed: {name}")
+        except Exception as e:
+            print(f"failed: {name} \n with the following exception: {e}")
 
 
 def main():
@@ -69,6 +70,11 @@ def main():
 
     create_index(models)
 
+def single():
+    models = [
+        "intfloat/multilingual-e5-large-instruct"
+    ]
+    create_index(models, load_from_disc=True)
 
 if __name__ == "__main__":
-    main()
+    single()

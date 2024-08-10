@@ -189,5 +189,5 @@ def re_tests():
 
 if __name__ == "__main__":
     #additional(url = "https://service.osnabrueck.de/dienstleistungen/-/egov-bis-detail/dienstleistung/4157/show")
-    #additional("https://service.osnabrueck.de/dienstleistungen/-/egov-bis-detail/dienstleistung/3630/show")
-    additional("https://service.osnabrueck.de/dienstleistungen/-/egov-bis-detail/einrichtung/6205/show")
+    additional("https://service.osnabrueck.de/dienstleistungen/-/egov-bis-detail/dienstleistung/3630/show")
+    #additional("https://service.osnabrueck.de/dienstleistungen/-/egov-bis-detail/einrichtung/6205/show")

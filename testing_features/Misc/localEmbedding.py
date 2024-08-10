@@ -10,7 +10,7 @@ from llama_index.core import Document
 import os
 
 def old():
-    model_name = "T-Systems-onsite/cross-en-de-roberta-sentence-transformer"
+    model_name = "intfloat/multilingual-e5-large-instruct"
 
     embed_model = HuggingFaceEmbedding(model_name=model_name)
 
@@ -72,4 +72,4 @@ def main():
     #print(response)
 
 if __name__ == "__main__":
-    main()
+    old()
