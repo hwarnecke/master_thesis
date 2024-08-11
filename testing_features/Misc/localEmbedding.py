@@ -12,7 +12,7 @@ import os
 def old():
     model_name = "intfloat/multilingual-e5-large-instruct"
 
-    embed_model = HuggingFaceEmbedding(model_name=model_name)
+    embed_model = HuggingFaceEmbedding(model_name=model_name, device="cpu")
 
     # test if it worked
     embeddings = embed_model.get_text_embedding("Hallo Welt!")

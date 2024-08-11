@@ -97,4 +97,4 @@ def read_nodes():
         return json.load(file)
 
 if __name__ == "__main__":
-    create_nodes()
+    es_main()
