@@ -123,25 +123,9 @@ def run_experiment(questions: str = "questions.json",
 
             query = question["question"]
 
-            # the auto retriever through an error because it tried using non-existent metadata as filter
-            # I might be able to catch that for now and find a fix for that later:
-            # TODO: it might be that this changed the response type of other qe and created a lot of issues later
-            #       need to check where those errors came from, so this is removed for now
-            #       The errors might be created because CUDA is OOM.
-            # TODO: Change the try-except block that it catches only the auto-retriever issues and not the OOM ones
-            # try:
-            #     response = qe.query(query)
-            # except Exception as e:
-            #     response = Response({"observation": f"Error: {str(e)}"})
             response = qe.query(query)
 
-            try:
-                nodes: dict[str, str] = create_context_log(response)
-                print(f"Response type: {type(response)}")
-            except Exception as e:
-                print(f"Response type: {type(response)}")
-                print(f"Response: {response}")
-                raise
+            nodes: dict[str, str] = create_context_log(response)
 
             correct_answer = question["answer"]
 
@@ -331,8 +315,6 @@ def create_context_log(response) -> dict[str, str]:
     return source_nodes
 
 
-# TODO: include some metadata (i.e. link) in the logs
-#       in order to check if all nodes come from the same page
 def extract_source_nodes(response) -> dict[str, str]:
     """
     :param response: LlamaIndex Response Object
@@ -401,7 +383,29 @@ def run_qe(name: str = None):
                    use_query_engines=qes)
 
 
+def compare_embeddings():
+    """
+    First find out which embedding works best.
+    For that we only need a basic QE but all embeddings.
+    Evaluation is probably excluded completely, because it can be easier done with a comparison of the nodes themselves.
+
+    :return:
+    """
+    custom_qa_path = "PromptTemplates/german_qa_template.txt"
+    custom_refine_path = "PromptTemplates/german_refine_template.txt"
+    qes = ["base"]
+    embedding_models = ["OpenAI/text-embedding-ada-002",
+                        "jinaai/jina-embeddings-v2-base-de",
+                        "intfloat/multilingual-e5-large-instruct",
+                        "T-Systems-onsite/cross-en-de-roberta-sentence-transformer"
+                        ]
+    for model in embedding_models:
+        run_experiment(custom_qa_path=custom_qa_path,
+                       custom_refine_path=custom_refine_path,
+                       evaluate=False,
+                       embedding=model,
+                       use_query_engines=qes)
 
 
 if __name__ == "__main__":
-    run_qe()
+    compare_embeddings()
