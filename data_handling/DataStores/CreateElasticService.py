@@ -30,7 +30,8 @@ To stop the container, use:
 
 def create_index(models: list,
                  es_url: str = "http://localhost:9200",
-                 load_from_disc: bool = False):
+                 load_from_disc: bool = False,
+                 device="cuda"):
     load_dotenv()
     open_ai_key = os.getenv("OPENAI_API_KEY")
     hugging_face_key = os.getenv("HF_API_KEY")
@@ -44,7 +45,13 @@ def create_index(models: list,
         name = "service_" + model.split("/")[1]
         print(f"starting: {name}")
         if not model == "OpenAI/text-embedding-ada-002":
-            embedding_model = HuggingFaceEmbedding(model_name=model, max_length=512)
+            # out of some weird reason I get a OOM error for that embedding, even if there is enough memory,
+            # I'll just run it on CPU
+            if model == "intfloat/multilingual-e5-large-instruct":
+                device = "cpu"
+            else:
+                device = "cuda"
+            embedding_model = HuggingFaceEmbedding(model_name=model, max_length=512, device=device)
             Settings.embed_model = embedding_model
 
         es_vector_store = ElasticsearchStore(
@@ -68,13 +75,13 @@ def main():
               "T-Systems-onsite/cross-en-de-roberta-sentence-transformer"
               ]
 
-    create_index(models)
+    create_index(models, load_from_disc=True)
 
 def single():
     models = [
         "intfloat/multilingual-e5-large-instruct"
     ]
-    create_index(models, load_from_disc=True)
+    create_index(models, load_from_disc=True, device="cpu")
 
 if __name__ == "__main__":
-    single()
+    main()
