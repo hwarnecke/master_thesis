@@ -32,19 +32,10 @@ class FusionRetriever(BaseRetriever):
         #client = OpenAI(api_key=api_key)
         Settings.llm = OpenAI(model=self.llm, api_key=api_key)
 
-        template = "Du bekommst eine Frage übergeben. Erstelle 5 ähnliche Fragen die jeweils in eine leicht andere Richtung gehen, aber dennoch ähnlich sind. Beanwtorte nicht die Frage sondern gebe nur die neuen Fragen zuück. Die Frage lautet: \n {question}"
+        template = "Du bekommst eine Frage gestellt. Formuliere die Frage auf 5 unterschiedliche Weißen um ohne dabei den Inhalt der Frage zu ändern. Beanwtorte nicht die Frage sondern gebe nur die neuen Fragen zuück. Die Frage lautet: \n {question}"
 
         user_input = template.format(question=question)
 
-        # chat_response = client.chat.completions.create(
-        #     model="gpt-3.5-turbo",
-        #     messages=[
-        #         {
-        #             "role": "user",
-        #             "content": user_input
-        #         }
-        #     ],
-        # )
         chat_response = Settings.llm.complete(user_input)
         generated_questions = chat_response.text.split("\n")
         generated_questions = [self._remove_leading_numbers(s) for s in generated_questions]
