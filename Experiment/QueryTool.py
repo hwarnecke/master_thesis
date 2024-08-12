@@ -2,8 +2,7 @@ class QueryTool:
 
     def __init__(self, query_engine):
         self.description = ("Query Engine: Nützlich um verschiedene Fragen zu den Dienstleistungen der Stadt Osnabrück zu beantworten."
-                            " Der Input sollte die Form einer Frage sein, die du beantwortet haben möchtest."
-                            " Fragen sollten möglichst kleinschrittig gestellt werden.")
+                            " Der Input sollte die Form einer Frage sein, die du beantwortet haben möchtest.")
         self.name = "Query Engine"
         self.qe = query_engine
 

@@ -34,6 +34,7 @@ class Agent:
         self.total_time: float = 0
 
         self.retriever_log: dict[str, any] = {}
+        self.response_objects: list[any] = []
 
 
     def __CreateLogItem(self, query: str, inputs: list[str], observations: list[str]) -> dict[str, str]:
@@ -133,17 +134,17 @@ class Agent:
                 observation = ""
                 for tool in self.tools:
                     if tool.name == action:
-                        response = tool(action_input)
+                        response = tool(action_input)   # call the query engine
+                        self.response_objects.append(response)  # I need to log all the retrieved documents
                         observation += str(response)
                         self.__ExtractTime(tool)
                         retriever_log = self.__create_retriever_log(response=response, input=action_input, count=i+1)
                         self.retriever_log.update(retriever_log)
 
-
                 action_inputs.append(action_input)
                 observations.append(observation)
 
-                prompt += f"\nObservation: {observation}\n"
+                prompt += f"\nBeobachtung: {observation}\n"
 
             else:
                 # if no action is found, return the response as a final answer is reached
@@ -158,7 +159,8 @@ class Agent:
                                          "response": answer,
                                          "query": question,
                                          "retriever_log": self.retriever_log,
-                                         "observations": observations})
+                                         "observations": observations,
+                                         "response_objects": self.response_objects})
                 return result
 
         # if no final answer is reached by now it means that he tried to do more than the max_iteration steps
@@ -168,13 +170,18 @@ class Agent:
                                  "response": answer_template,
                                  "query": question,
                                  "retriever_log": self.retriever_log,
-                                 "observations": observations})
+                                 "observations": observations,
+                                 "response_objects": self.response_objects})
         return result
 
+
+    def get_response_objects(self) -> list[any]:
+        return self.response_objects
 
 class Response(dict):
     """
     For compatibility reasons with the Llamaindex response class.
+    Basically, this response musst give the actual response when handled as a string.
     """
     def __str__(self):
         return str(self.get("response", None))

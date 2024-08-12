@@ -1,3 +1,5 @@
+from typing import Dict
+
 from CreateQueryEngines import create_query_engines
 from DataLogging import DataLogging
 import json, tiktoken, os
@@ -282,42 +284,36 @@ def evaluate_response(metrics: list, input: str, actual_output: str, retrieval_c
     return evaluation
 
 
-def create_context_log(response) -> dict[str, str]:
+def create_context_log(response) -> dict[str, any]:
     """
     create a log item for the context information.
-    The agent will have some None values because it logs the observations as source nodes, instead of real source nodes
+    the agent returns a dictionary instead of a response object which contains a list with all response objects.
     :param response:
     :return:
     """
     if isinstance(response, dict):
-        observations = extract_context(response)
-        n: int = 0
-        source_nodes = {}
-        for observation in observations:
-            n += 1
-            number = f"Node {n}"
-            id_key = number + " ID"
-            id_value = None
-            content_key = number + " content"
-            content_value = observation
-            score_key = number + " score"
-            score_value = None
-            metadata_key = number + " Metadata: Name"
-            metadata_content = None
-            node_dict = {id_key: id_value,
-                         content_key: content_value,
-                         metadata_key: metadata_content,
-                         score_key: score_value}
-            source_nodes.update(node_dict)
+        response_objects = response["response_objects"]
+        i: int = 0
+        # log how many calls there were
+        source_nodes = {"Number of Calls": len(response_objects)}
+        # create a log for each response object
+        for response in response_objects:
+            i += 1
+            identifier: str = f"Call {i} "
+            source_nodes.update(extract_source_nodes(response, identifier=identifier))
+            # additionally log the actual answer of that response object
+            answer: dict[str, str] = {f"Call {i} response": str(response)}
+            source_nodes.update(answer)
     else:
         source_nodes = extract_source_nodes(response)
 
     return source_nodes
 
 
-def extract_source_nodes(response) -> dict[str, str]:
+def extract_source_nodes(response, identifier: str = "") -> dict[str, str]:
     """
     :param response: LlamaIndex Response Object
+    :param identifier: in case of the agent, I might want to add from which call it is
     :return: the nodes as dict for data logging
     """
     n: int = 0
@@ -325,7 +321,7 @@ def extract_source_nodes(response) -> dict[str, str]:
     all_nodes = response.source_nodes
     for node in all_nodes:
         n += 1
-        number = f"Node {n}"
+        number = f"{identifier}Node {n}"
         # extract the ID
         id_key = number + " ID"
         id_value = node.id_
@@ -395,7 +391,7 @@ def main_experiment():
     run_experiment(custom_qa_path=custom_qa_path,
                    custom_refine_path=custom_refine_path,
                    evaluate=False,
-                   use_query_engines=["agent", "iter_retgen"])
+                   use_query_engines=["agent"])
 
 
 if __name__ == "__main__":
