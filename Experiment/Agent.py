@@ -102,7 +102,7 @@ class Agent:
     def query(self, question: str) -> dict:
         prompt = self.prompt.replace("{question}", question)
         self.retriever_log = {}
-        max_iterations: int = 10
+        max_iterations: int = 5
         action_inputs: list[str] = []
         observations: list[str] = []
         for i in range(max_iterations):
@@ -167,7 +167,8 @@ class Agent:
         result: dict = Response({"thought_process": thought_process,
                                  "response": answer_template,
                                  "query": question,
-                                 "retriever_log": self.retriever_log})
+                                 "retriever_log": self.retriever_log,
+                                 "observations": observations})
         return result
 
 

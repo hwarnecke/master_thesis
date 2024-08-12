@@ -346,27 +346,6 @@ def extract_source_nodes(response) -> dict[str, str]:
         source_nodes.update(node_dict)
     return source_nodes
 
-
-def run_all():
-    embedding_models = ["OpenAI/text-embedding-ada-002",
-                        "jinaai/jina-embeddings-v2-base-de",
-                        "intfloat/multilingual-e5-large-instruct",
-                        "T-Systems-onsite/cross-en-de-roberta-sentence-transformer"
-                        ]
-
-    llms = ["gpt-3.5-turbo", "gpt-4"]
-
-    custom_qa_path = "PromptTemplates/german_qa_template.txt"
-    custom_refine_path = "PromptTemplates/german_refine_template.txt"
-
-    for llm in llms:
-        for embedding in embedding_models:
-            run_experiment(custom_qa_path=custom_qa_path,
-                           custom_refine_path=custom_refine_path,
-                           embedding=embedding,
-                           llm=llm)
-
-
 def run_qe(name: str = None):
     custom_qa_path = "PromptTemplates/german_qa_template.txt"
     custom_refine_path = "PromptTemplates/german_refine_template.txt"
@@ -406,6 +385,18 @@ def compare_embeddings():
                        embedding=model,
                        use_query_engines=qes)
 
+def main_experiment():
+    """
+    The openAI embedding was by far the best approach, so I'll use that one for the main experiment.
+    :return:
+    """
+    custom_qa_path = "PromptTemplates/german_qa_template.txt"
+    custom_refine_path = "PromptTemplates/german_refine_template.txt"
+    run_experiment(custom_qa_path=custom_qa_path,
+                   custom_refine_path=custom_refine_path,
+                   evaluate=False,
+                   use_query_engines=["agent", "iter_retgen"])
+
 
 if __name__ == "__main__":
-    compare_embeddings()
+    main_experiment()
