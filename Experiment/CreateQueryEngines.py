@@ -44,7 +44,8 @@ def create_query_engines(llm: str = "gpt-40-mini",
                          rerank_top_n: int = 3,
                          retriever_top_k: int = 6,
                          custom_qa_prompt: str = None,
-                         custom_refine_prompt: str = None) -> dict:
+                         custom_refine_prompt: str = None,
+                         response_mode: str = "refine") -> dict:
 
     """
     This function creates the query engines for the experiment.
@@ -101,7 +102,7 @@ def create_query_engines(llm: str = "gpt-40-mini",
         storage_context=storage_context,
         show_progress=False)
 
-    basic_response_synthesizer = get_response_synthesizer(response_mode="refine")
+    basic_response_synthesizer = get_response_synthesizer(response_mode=response_mode)
 
     prompt_id = "default_prompt"
     if custom_qa_prompt and custom_refine_prompt:

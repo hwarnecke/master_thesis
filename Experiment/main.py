@@ -26,7 +26,8 @@ def run_experiment(questions: str = "questions.json",
                    rerank_top_n: int = 3,
                    retrieval_top_k: int = 6,
                    use_query_engines: list[str] = None,
-                   evaluate: bool = True
+                   evaluate: bool = True,
+                   response_mode: str = "refine"
                    ):
     """
     Set up and run the experiment. The following parameters can be changed:
@@ -38,6 +39,7 @@ def run_experiment(questions: str = "questions.json",
     :param rerank_top_n: how many documents the reranker should choose (default is 3)
     :param retrieval_top_k: how many documents the retriever should fetch (default is 6)
     :param use_query_engines: list of names if only some specific query engines should be used instead of all of them
+    :param response_mode: refine for normal behaviour or no_text for skipping the response synthesizer (only retrieval)
     :return: No return
     """
 
@@ -74,8 +76,11 @@ def run_experiment(questions: str = "questions.json",
                                              rerank_top_n=rerank_top_n,
                                              retriever_top_k=retrieval_top_k,
                                              custom_qa_prompt=custom_qa_content,
-                                             custom_refine_prompt=custom_refine_content)
-    #
+                                             custom_refine_prompt=custom_refine_content,
+                                             response_mode=response_mode)
+
+    # I know it is inefficient to create all query engines even if I only use one and discard the rest
+    # but tbh. it was way easier to implement at this stage and it doesn't really hurt the performance, so...
     query_engines = {}
     if use_query_engines:
         query_engines = {key: value for key, value in all_query_engines.items()
