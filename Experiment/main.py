@@ -396,7 +396,9 @@ def main_experiment():
     run_experiment(custom_qa_path=custom_qa_path,
                    custom_refine_path=custom_refine_path,
                    evaluate=False,
-                   use_query_engines=["agent"])
+                   use_query_engines=["base", "rerank", "fusion", "hyde", "hybrid"],
+                   response_mode="no_text",
+                   retrieval_top_k=3)
 
 
 if __name__ == "__main__":

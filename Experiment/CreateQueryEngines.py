@@ -104,12 +104,11 @@ def create_query_engines(llm: str = "gpt-40-mini",
 
     basic_response_synthesizer = get_response_synthesizer(response_mode=response_mode)
 
-    prompt_id = "default_prompt"
-    if custom_qa_prompt and custom_refine_prompt:
+    prompt_id = "retrieval_only"
+    if response_mode == "refine" and custom_qa_prompt and custom_refine_prompt:
         custom_qa_template = PromptTemplate(custom_qa_prompt)
         custom_refine_template = PromptTemplate(custom_refine_prompt)
-        # TODO: might want to add a more descriptive name if I use multiple different prompts
-        prompt_id = "custom_prompt"
+        prompt_id = "german_prompt"
         basic_response_synthesizer.update_prompts(
             {
                 "qa_template": custom_qa_template,
