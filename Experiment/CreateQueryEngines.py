@@ -21,7 +21,14 @@ from QueryTool import QueryTool
 from ITER_RETGEN import ITER_RETGEN
 
 
-def generateID(name: str, llm: str, embedding: str, timestamp: str, prompt: str) -> str:
+def generateID(name: str,
+               llm: str,
+               embedding: str,
+               reranker: str,
+               timestamp: str,
+               prompt: str,
+               retriever_top_k: int,
+               rerank_top_n: int) -> str:
     """
     The ID doubles as the directory and name of the QE, that's why it has everything two times.
     Everything before the '/' will be used as the directory and everything after that will be used as file name.
@@ -32,19 +39,23 @@ def generateID(name: str, llm: str, embedding: str, timestamp: str, prompt: str)
     :param name:
     :param llm:
     :param embedding:
+    :param reranker
     :param timestamp:
     :param prompt:
     :return: str - the ID
     """
-    return f"{timestamp}_{llm}_{embedding}_{prompt}/{name}_{llm}_{embedding}_{prompt}_{timestamp}"
+    reranker = reranker.split("/")[1]
+    return f"{timestamp}_{llm}_{embedding}_{reranker}_{prompt}_retriever{retriever_top_k}_rerank{rerank_top_n}/{name}_{llm}_{embedding}_{reranker}_{prompt}_{timestamp}"
 
 def create_query_engines(llm: str = "gpt-40-mini",
                          embedding_name: str ="OpenAI/text-embedding-ada-002",
                          embedding_url: str = "http://localhost:9200",
                          rerank_top_n: int = 3,
+                         rerank_model: str = "cross-encoder/stsb-distilroberta-base",
                          retriever_top_k: int = 6,
                          custom_qa_prompt: str = None,
                          custom_refine_prompt: str = None,
+                         use_query_engines: list[str] = ["base", "rerank", "hybrid", "auto", "hyde", "fusion", "agent", "iter-retgen"],
                          response_mode: str = "refine") -> dict:
 
     """
@@ -54,6 +65,7 @@ def create_query_engines(llm: str = "gpt-40-mini",
     :param embedding_name: a name of a HuggingFace embedding. Default is the OpenAI/text-embedding-ada-002
     :param embedding_url: the url of the docker container with the index
     :param rerank_top_n: the number of top nodes to be returned by the reranker. Default is 3.
+    :param rerank_model: which model to use, currently limited to some HuggingFace models
     :param retriever_top_k: the number of top nodes to be returned by the retriever. Default is 6.
     :param custom_qa_prompt: the prompt to use for the qa part of the refine response mode.
     :param custom_refine_prompt: the prompt to use for the refine part of the refine response mode.
@@ -94,8 +106,7 @@ def create_query_engines(llm: str = "gpt-40-mini",
     storage_context = StorageContext.from_defaults(vector_store=es_vector_store)
 
 
-
-    reranker = SentenceTransformerRerank(top_n=rerank_top_n)
+    reranker = SentenceTransformerRerank(top_n=rerank_top_n, model=rerank_model)
 
     index = VectorStoreIndex.from_vector_store(
         vector_store=es_vector_store,
@@ -129,7 +140,7 @@ def create_query_engines(llm: str = "gpt-40-mini",
         - hyde
         - fusion
         - agent
-        - iter_retgen
+        - iter-retgen
         
     2. the LLM used
         - gpt3 for gpt-3.5-turbo
@@ -165,49 +176,51 @@ def create_query_engines(llm: str = "gpt-40-mini",
     """
     1. the base query engine without any modifications
     """
-    # here I don't use the basic_retriever I created above, because this one should retrieve fewer documents
-    base_retriever = index.as_retriever(similarity_top_k=rerank_top_n)
-    query_base = ModifiedQueryEngine(retriever=base_retriever, response_synthesizer=basic_response_synthesizer)
-
     name_id = "base"
-    retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
-    query_engines[retriever_id] = query_base
+    if name_id in use_query_engines:
+        # here I don't use the basic_retriever I created above, because this one should retrieve fewer documents
+        base_retriever = index.as_retriever(similarity_top_k=rerank_top_n)
+        query_base = ModifiedQueryEngine(retriever=base_retriever, response_synthesizer=basic_response_synthesizer)
+
+        retriever_id = generateID(name_id, llm_id, embedding_id, rerank_model, timestamp, prompt_id)
+        query_engines[retriever_id] = query_base
 
     """
     2. the base query engine with the reranker
     """
-    query_rerank = ModifiedQueryEngine(retriever=basic_retriever,
-                                       response_synthesizer=basic_response_synthesizer,
-                                       reranker=reranker)
-
     name_id = "rerank"
-    retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
-    query_engines[retriever_id] = query_rerank
+    if name_id in use_query_engines:
+        query_rerank = ModifiedQueryEngine(retriever=basic_retriever,
+                                           response_synthesizer=basic_response_synthesizer,
+                                           reranker=reranker)
+
+        retriever_id = generateID(name_id, llm_id, embedding_id, rerank_model, timestamp, prompt_id, retriever_top_k, rerank_top_n)
+        query_engines[retriever_id] = query_rerank
 
     """
     3. the hybrid query engine with the basic retriever and the bm25 retriever
     """
-
-    base = index.as_retriever(similarity_top_k=retriever_top_k)
-
-    # apparently, using an external vector store does block some functionality in order to simplify storage
-    # this means I cannot directly access the nodes in the docstore which are needed for the BM25
-    # one hacky solution is to just retrieve all nodes with a standard retriever and a high top_k
-    hacky_retriever = index.as_retriever(similarity_top_k=1000)
-    source_nodes = hacky_retriever.retrieve("und")
-    hacky_nodes = [x.node for x in source_nodes]
-
-    bm25 = BM25Retriever.from_defaults(nodes=hacky_nodes, similarity_top_k=retriever_top_k)
-    hybrid_retriever = CombinedRetriever([base, bm25], mode="OR")
-    query_hybrid = ModifiedQueryEngine(
-        retriever=hybrid_retriever,
-        response_synthesizer=basic_response_synthesizer,
-        reranker=reranker,
-    )
-
     name_id = "hybrid"
-    retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
-    query_engines[retriever_id] = query_hybrid
+    if name_id in use_query_engines:
+        base = index.as_retriever(similarity_top_k=retriever_top_k)
+
+        # apparently, using an external vector store does block some functionality in order to simplify storage
+        # this means I cannot directly access the nodes in the docstore which are needed for the BM25
+        # one hacky solution is to just retrieve all nodes with a standard retriever and a high top_k
+        # with context windows of 512 there should be 1203 TextNodes total in the KB.
+        hacky_retriever = index.as_retriever(similarity_top_k=1000)
+        source_nodes = hacky_retriever.retrieve("und")
+        hacky_nodes = [x.node for x in source_nodes]
+
+        bm25 = BM25Retriever.from_defaults(nodes=hacky_nodes, similarity_top_k=retriever_top_k)
+        hybrid_retriever = CombinedRetriever([base, bm25], mode="OR")
+        query_hybrid = ModifiedQueryEngine(
+            retriever=hybrid_retriever,
+            response_synthesizer=basic_response_synthesizer,
+            reranker=reranker,
+        )
+        retriever_id = generateID(name_id, llm_id, embedding_id, rerank_model, timestamp, prompt_id, retriever_top_k, rerank_top_n)
+        query_engines[retriever_id] = query_hybrid
 
     """
     4. AutoRetriever
@@ -224,80 +237,81 @@ def create_query_engines(llm: str = "gpt-40-mini",
         ...query...
         sys.stdout = old_stdout
     """
-    # EDIT: I might want to outsource this into a separate file
-    # create a vector store info that contains an overview over the metadata
-    # vector_store_info = VectorStoreInfo(
-    #     content_info="Informationen über die Dienstleistungen der Stadt Osnabrück.",
-    #     metadata_info=[
-    #         MetadataInfo(
-    #             name="Typ",
-    #             description="Der Typ der Information, die in dem Dokument beschrieben ist.",
-    #             type="String",
-    #         ),
-    #         MetadataInfo(
-    #             name="Name",
-    #             description="Der Name der Dienstleistung, des Kontakts oder der Einrichtung.",
-    #             type="String",
-    #         ),
-    #         MetadataInfo(
-    #             name="URL",
-    #             description="Die URL, unter der die Dienstleistung zu finden ist.",
-    #             type="String",
-    #         ),
-    #         MetadataInfo(
-    #             name="Kategorie",
-    #             description="Die Kategorie, zu der die Dienstleistung gehört.",
-    #             type="String or list[str]",
-    #         ),
-    #         MetadataInfo(
-    #             name="Anfangsbuchstabe",
-    #             description="Der Anfangsbuchstabe des Namens der Dienstleistung.",
-    #             type="String",
-    #         ),
-    #         MetadataInfo(
-    #             name="Synonyme",
-    #             description="Synonyme für den Namen der Dienstleistung.",
-    #             type="list[str]",
-    #         ),
-    #         MetadataInfo(
-    #             name="Fachbereich",
-    #             description="Der Fachbereich, zu dem die Dienstleistung gehört.",
-    #             type="String",
-    #         ),
-    #         MetadataInfo(
-    #             name="Kontakt",
-    #             description="Der Kontakt für die Dienstleistung.",
-    #             type="String",
-    #         ),
-    #         MetadataInfo(
-    #             name="Kontakt URL",
-    #             description="Die URL des Kontakts für die Dienstleistung.",
-    #             type="String",
-    #         ),
-    #         MetadataInfo(
-    #             name="Dienstleistungen",
-    #             description="Die Dienstleistungen für die dieser Kontakt oder diese Einrichtung zuständig ist.",
-    #             type="list[str]"
-    #         )
-    #     ],
-    # )
-    #
-    # auto_retriever = VectorIndexAutoRetriever(
-    #     index=index,
-    #     vector_store_info=vector_store_info,
-    #     verbose=True,
-    # )
-    #
-    # query_auto = ModifiedQueryEngine(
-    #     retriever=auto_retriever,
-    #     response_synthesizer=basic_response_synthesizer,
-    #     reranker=reranker,
-    #     reroute_stdout=True,
-    # )
-    #
     # name_id = "auto"
-    # retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
-    # query_engines[retriever_id] = query_auto
+    # if name_id in use_query_engines:
+        # EDIT: I might want to outsource this into a separate file
+        # create a vector store info that contains an overview over the metadata
+        # vector_store_info = VectorStoreInfo(
+        #     content_info="Informationen über die Dienstleistungen der Stadt Osnabrück.",
+        #     metadata_info=[
+        #         MetadataInfo(
+        #             name="Typ",
+        #             description="Der Typ der Information, die in dem Dokument beschrieben ist.",
+        #             type="String",
+        #         ),
+        #         MetadataInfo(
+        #             name="Name",
+        #             description="Der Name der Dienstleistung, des Kontakts oder der Einrichtung.",
+        #             type="String",
+        #         ),
+        #         MetadataInfo(
+        #             name="URL",
+        #             description="Die URL, unter der die Dienstleistung zu finden ist.",
+        #             type="String",
+        #         ),
+        #         MetadataInfo(
+        #             name="Kategorie",
+        #             description="Die Kategorie, zu der die Dienstleistung gehört.",
+        #             type="String or list[str]",
+        #         ),
+        #         MetadataInfo(
+        #             name="Anfangsbuchstabe",
+        #             description="Der Anfangsbuchstabe des Namens der Dienstleistung.",
+        #             type="String",
+        #         ),
+        #         MetadataInfo(
+        #             name="Synonyme",
+        #             description="Synonyme für den Namen der Dienstleistung.",
+        #             type="list[str]",
+        #         ),
+        #         MetadataInfo(
+        #             name="Fachbereich",
+        #             description="Der Fachbereich, zu dem die Dienstleistung gehört.",
+        #             type="String",
+        #         ),
+        #         MetadataInfo(
+        #             name="Kontakt",
+        #             description="Der Kontakt für die Dienstleistung.",
+        #             type="String",
+        #         ),
+        #         MetadataInfo(
+        #             name="Kontakt URL",
+        #             description="Die URL des Kontakts für die Dienstleistung.",
+        #             type="String",
+        #         ),
+        #         MetadataInfo(
+        #             name="Dienstleistungen",
+        #             description="Die Dienstleistungen für die dieser Kontakt oder diese Einrichtung zuständig ist.",
+        #             type="list[str]"
+        #         )
+        #     ],
+        # )
+        #
+        # auto_retriever = VectorIndexAutoRetriever(
+        #     index=index,
+        #     vector_store_info=vector_store_info,
+        #     verbose=True,
+        # )
+        #
+        # query_auto = ModifiedQueryEngine(
+        #     retriever=auto_retriever,
+        #     response_synthesizer=basic_response_synthesizer,
+        #     reranker=reranker,
+        #     reroute_stdout=True,
+        # )
+        #
+        # retriever_id = generateID(name_id, llm_id, embedding_id, rerank_model, timestamp, prompt_id, retriever_top_k, rerank_top_n)
+        # query_engines[retriever_id] = query_auto
 
     """
     5. HyDE (Hybrid Document Embedding)
@@ -314,51 +328,52 @@ def create_query_engines(llm: str = "gpt-40-mini",
         hyde_doc = query_bundle.embedding_strs[0]
     """
     name_id = "hyde"
-    retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
-    hyde = HyDEQueryTransform(include_original=True)
-    query_hyde = ModifiedQueryEngine(
-        retriever=basic_retriever,
-        response_synthesizer=basic_response_synthesizer,
-        reranker=reranker,
-        hyde=hyde
-    )
-    query_engines[retriever_id] = query_hyde
+    if name_id in use_query_engines:
+        retriever_id = generateID(name_id, llm_id, embedding_id, rerank_model, timestamp, prompt_id)
+        hyde = HyDEQueryTransform(include_original=True)
+        query_hyde = ModifiedQueryEngine(
+            retriever=basic_retriever,
+            response_synthesizer=basic_response_synthesizer,
+            reranker=reranker,
+            hyde=hyde
+        )
+        query_engines[retriever_id] = query_hyde
 
     """
     6. RAG Fusion
     
     Similar to the AutoRetriever, the stdout needs to be redirected in order to catch the verbose output.
     """
-
-    #base_retriever = index.as_retriever(similarity_top_k=5)
-    fusion_retriever = FusionRetriever(retriever=basic_retriever)
-    query_fusion = ModifiedQueryEngine(
-        retriever=fusion_retriever,
-        response_synthesizer=basic_response_synthesizer,
-        reranker=reranker,
-    )
-
     name_id = "fusion"
-    retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
-    query_engines[retriever_id] = query_fusion
+    if name_id in use_query_engines:
+        #base_retriever = index.as_retriever(similarity_top_k=5)
+        fusion_retriever = FusionRetriever(retriever=basic_retriever)
+        query_fusion = ModifiedQueryEngine(
+            retriever=fusion_retriever,
+            response_synthesizer=basic_response_synthesizer,
+            reranker=reranker,
+        )
+        retriever_id = generateID(name_id, llm_id, embedding_id, rerank_model, timestamp, prompt_id, retriever_top_k, rerank_top_n)
+        query_engines[retriever_id] = query_fusion
 
     """
     7. Agent
     """
-    query_engine = ModifiedQueryEngine(retriever=base_retriever, response_synthesizer=basic_response_synthesizer)
-    query_tool = QueryTool(query_engine=query_engine)
-    agent = Agent(tools=[query_tool])
-
     name_id = "agent"
-    retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
-    query_engines[retriever_id] = agent
+    if name_id in use_query_engines:
+        query_engine = ModifiedQueryEngine(retriever=base_retriever, response_synthesizer=basic_response_synthesizer)
+        query_tool = QueryTool(query_engine=query_engine)
+        agent = Agent(tools=[query_tool])
+        retriever_id = generateID(name_id, llm_id, embedding_id, rerank_model, timestamp, prompt_id, retriever_top_k, rerank_top_n)
+        query_engines[retriever_id] = agent
 
     """
     8. ITER-RETGEN
     """
-    iter_retgen = ITER_RETGEN(retriever=basic_retriever, generator=basic_response_synthesizer, reranker=reranker)
-    name_id = "iter_retgen"
-    retriever_id = generateID(name_id, llm_id, embedding_id, timestamp, prompt_id)
-    query_engines[retriever_id] = iter_retgen
+    name_id = "iter-retgen"
+    if name_id in use_query_engines:
+        iter_retgen = ITER_RETGEN(retriever=basic_retriever, generator=basic_response_synthesizer, reranker=reranker)
+        retriever_id = generateID(name_id, llm_id, embedding_id, rerank_model, timestamp, prompt_id, retriever_top_k, rerank_top_n)
+        query_engines[retriever_id] = iter_retgen
 
     return query_engines

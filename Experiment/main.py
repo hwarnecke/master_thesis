@@ -24,6 +24,7 @@ def run_experiment(questions: str = "questions.json",
                    embedding: str = "OpenAI/text-embedding-ada-002",
                    llm: str = "gpt-4o-mini",
                    rerank_top_n: int = 3,
+                   rerank_model: str = "cross-encoder/stsb-distilroberta-base",
                    retrieval_top_k: int = 6,
                    use_query_engines: list[str] = None,
                    evaluate: bool = True,
@@ -37,6 +38,7 @@ def run_experiment(questions: str = "questions.json",
     :param embedding: name of the HF embedding to use (as default text-embedding-ada-002 is used)
     :param llm: name of the llm to use (currently only OpenAI models are supported)
     :param rerank_top_n: how many documents the reranker should choose (default is 3)
+    :param rerank_model: which model to use, currently limited to some HuggingFace models
     :param retrieval_top_k: how many documents the retriever should fetch (default is 6)
     :param use_query_engines: list of names if only some specific query engines should be used instead of all of them
     :param response_mode: refine for normal behaviour or no_text for skipping the response synthesizer (only retrieval)
@@ -71,22 +73,19 @@ def run_experiment(questions: str = "questions.json",
     # for a more detailed description of the query engines and the possible variations that can be made,
     # see the CreateQueryEngines.py file
     print("Creating the Query Engines and setting up the experiment")
-    all_query_engines = create_query_engines(llm=llm,
-                                             embedding_name=embedding,
-                                             rerank_top_n=rerank_top_n,
-                                             retriever_top_k=retrieval_top_k,
-                                             custom_qa_prompt=custom_qa_content,
-                                             custom_refine_prompt=custom_refine_content,
-                                             response_mode=response_mode)
 
-    # I know it is inefficient to create all query engines even if I only use one and discard the rest
-    # but tbh. it was way easier to implement at this stage and it doesn't really hurt the performance, so...
-    query_engines = {}
-    if use_query_engines:
-        query_engines = {key: value for key, value in all_query_engines.items()
-                         if any(name in key for name in use_query_engines)}
-    else:
-        query_engines.update(all_query_engines)
+    if use_query_engines is None:
+        use_query_engines = ["base", "rerank", "hybrid", "auto", "hyde", "fusion", "agent", "iter-retgen"]
+
+    query_engines = create_query_engines(llm=llm,
+                                         embedding_name=embedding,
+                                         rerank_top_n=rerank_top_n,
+                                         retriever_top_k=retrieval_top_k,
+                                         rerank_model= rerank_model,
+                                         custom_qa_prompt=custom_qa_content,
+                                         custom_refine_prompt=custom_refine_content,
+                                         use_query_engines=use_query_engines,
+                                         response_mode=response_mode)
 
     print("The following query engines have been chosen:")
     count: int = 0
@@ -400,6 +399,21 @@ def main_experiment():
                    response_mode="no_text",
                    retrieval_top_k=3)
 
+def reranker():
+    custom_qa_path = "PromptTemplates/german_qa_template.txt"
+    custom_refine_path = "PromptTemplates/german_refine_template.txt"
+    rerankers = ["cross-encoder/stsb-distilroberta-base", "cross-encoder/msmarco-MiniLM-L12-en-de-v1"]
+    for reranker in rerankers:
+        run_experiment(custom_qa_path=custom_qa_path,
+                       custom_refine_path=custom_refine_path,
+                       evaluate=False,
+                       embedding="intfloat/multilingual-e5-large-instruct",
+                       rerank_model=reranker,
+                       use_query_engines=["base", "rerank", "hybrid"],
+                       response_mode="no_text",
+                       retrieval_top_k=40,
+                       rerank_top_n=3)
+
 
 if __name__ == "__main__":
-    main_experiment()
+    reranker()
