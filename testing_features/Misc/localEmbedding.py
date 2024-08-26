@@ -10,7 +10,7 @@ from llama_index.core import Document
 import os
 
 def old():
-    model_name = "intfloat/multilingual-e5-large-instruct"
+    model_name = "GritLM/GritLM-7B"
 
     embed_model = HuggingFaceEmbedding(model_name=model_name, device="cpu")
 

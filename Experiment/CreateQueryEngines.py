@@ -12,6 +12,7 @@ from llama_index.core.vector_stores import MetadataInfo, VectorStoreInfo
 from llama_index.core.indices.query.query_transform.base import HyDEQueryTransform
 from llama_index.core import PromptTemplate
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.postprocessor.cohere_rerank import CohereRerank
 
 from CombinedRetriever import CombinedRetriever
 from FusionRetriever import FusionRetriever
@@ -44,7 +45,7 @@ def generateID(name: str,
     :param prompt:
     :return: str - the ID
     """
-    reranker = reranker.split("/")[1]
+    reranker = reranker.split("/")[-1] # in case there is no '/' like cohere reranker
     return f"{timestamp}_{llm}_{embedding}_{reranker}_{prompt}_retriever{retriever_top_k}_rerank{rerank_top_n}/{name}_{llm}_{embedding}_{reranker}_{prompt}_{timestamp}"
 
 def create_query_engines(llm: str = "gpt-40-mini",
@@ -105,8 +106,13 @@ def create_query_engines(llm: str = "gpt-40-mini",
 
     storage_context = StorageContext.from_defaults(vector_store=es_vector_store)
 
-
-    reranker = SentenceTransformerRerank(top_n=rerank_top_n, model=rerank_model)
+    if rerank_model == "rerank-multilingual-v3.0":
+        cohere_api_key = os.getenv("COHERE_API_KEY")
+        reranker = CohereRerank(api_key=cohere_api_key, top_n=rerank_top_n, model=rerank_model)
+        print(f"Using Cohere Reranker: {rerank_model}")
+    else:
+        reranker = SentenceTransformerRerank(top_n=rerank_top_n, model=rerank_model)
+        print(f"Using SentenceTransformerRerank: {rerank_model}")
 
     index = VectorStoreIndex.from_vector_store(
         vector_store=es_vector_store,
@@ -182,7 +188,7 @@ def create_query_engines(llm: str = "gpt-40-mini",
         base_retriever = index.as_retriever(similarity_top_k=rerank_top_n)
         query_base = ModifiedQueryEngine(retriever=base_retriever, response_synthesizer=basic_response_synthesizer)
 
-        retriever_id = generateID(name_id, llm_id, embedding_id, rerank_model, timestamp, prompt_id)
+        retriever_id = generateID(name_id, llm_id, embedding_id, rerank_model, timestamp, prompt_id, retriever_top_k, rerank_top_n)
         query_engines[retriever_id] = query_base
 
     """
@@ -329,7 +335,7 @@ def create_query_engines(llm: str = "gpt-40-mini",
     """
     name_id = "hyde"
     if name_id in use_query_engines:
-        retriever_id = generateID(name_id, llm_id, embedding_id, rerank_model, timestamp, prompt_id)
+        retriever_id = generateID(name_id, llm_id, embedding_id, rerank_model, timestamp, prompt_id, retriever_top_k, rerank_top_n)
         hyde = HyDEQueryTransform(include_original=True)
         query_hyde = ModifiedQueryEngine(
             retriever=basic_retriever,

@@ -22,7 +22,7 @@ def main():
     # create a token counter
     # verbose means it prints out the token to the console
     token_counter = TokenCountingHandler(
-        tokenizer=tiktoken.encoding_for_model("gpt-3.5-turbo").encode,
+        tokenizer=tiktoken.encoding_for_model("gpt-40-mini").encode,
         verbose=False,
     )
 
@@ -68,11 +68,11 @@ def LlamaTest():
     api_key = os.getenv("OPENAI_API_KEY")
 
     # Set the LLM
-    Settings.llm = llamaOpenAI(model="gpt-3.5-turbo", api_key=api_key)
+    Settings.llm = llamaOpenAI(model="gpt-34o-mini", api_key=api_key)
 
     # Create a token counter
     token_counter = TokenCountingHandler(
-        tokenizer=tiktoken.encoding_for_model("gpt-3.5-turbo").encode,
+        tokenizer=tiktoken.encoding_for_model("gpt-4o-mini").encode,
         verbose=False,
     )
 

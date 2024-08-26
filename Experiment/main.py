@@ -1,3 +1,4 @@
+import time
 from typing import Dict
 
 from CreateQueryEngines import create_query_engines
@@ -129,6 +130,9 @@ def run_experiment(questions: str = "questions.json",
 
             query = question["question"]
 
+            # cohere API key is limited to 10 calls per minute, so I need to add a delay here if I use it
+            if rerank_model == "rerank-multilingual-v3.0":
+                time.sleep(7)
             response = qe.query(query)
 
             nodes: dict[str, str] = create_context_log(response)
@@ -402,7 +406,8 @@ def main_experiment():
 def reranker():
     custom_qa_path = "PromptTemplates/german_qa_template.txt"
     custom_refine_path = "PromptTemplates/german_refine_template.txt"
-    rerankers = ["cross-encoder/stsb-distilroberta-base", "cross-encoder/msmarco-MiniLM-L12-en-de-v1"]
+    #rerankers = ["cross-encoder/stsb-distilroberta-base", "cross-encoder/msmarco-MiniLM-L12-en-de-v1", "rerank-multilingual-v3.0"]
+    rerankers = ["rerank-multilingual-v3.0"]
     for reranker in rerankers:
         run_experiment(custom_qa_path=custom_qa_path,
                        custom_refine_path=custom_refine_path,
@@ -411,7 +416,7 @@ def reranker():
                        rerank_model=reranker,
                        use_query_engines=["base", "rerank", "hybrid"],
                        response_mode="no_text",
-                       retrieval_top_k=40,
+                       retrieval_top_k=20,
                        rerank_top_n=3)
 
 
