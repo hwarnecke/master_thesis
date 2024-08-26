@@ -7,12 +7,15 @@ from llama_index.llms.ollama import Ollama
 from llama_index.vector_stores.elasticsearch import ElasticsearchStore
 from llama_index.core.postprocessor import SentenceTransformerRerank
 from llama_index.retrievers.bm25 import BM25Retriever
-from llama_index.core.retrievers import VectorIndexAutoRetriever
-from llama_index.core.vector_stores import MetadataInfo, VectorStoreInfo
+#from llama_index.core.retrievers import VectorIndexAutoRetriever
+#from llama_index.core.vector_stores import MetadataInfo, VectorStoreInfo
 from llama_index.core.indices.query.query_transform.base import HyDEQueryTransform
 from llama_index.core import PromptTemplate
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.postprocessor.cohere_rerank import CohereRerank
+from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.embeddings.cohere import CohereEmbedding
+from llama_index.llms.cohere import Cohere
 
 from CombinedRetriever import CombinedRetriever
 from FusionRetriever import FusionRetriever
@@ -49,24 +52,30 @@ def generateID(name: str,
     return f"{timestamp}_{llm}_{embedding}_{reranker}_{prompt}_retriever{retriever_top_k}_rerank{rerank_top_n}/{name}_{llm}_{embedding}_{reranker}_{prompt}_{timestamp}"
 
 def create_query_engines(llm: str = "gpt-40-mini",
-                         embedding_name: str ="OpenAI/text-embedding-ada-002",
+                         llm_type: str = "OpenAI",
+                         embedding_name: str ="text-embedding-3-small",
+                         embedding_type: str = "OpenAI",
                          embedding_url: str = "http://localhost:9200",
                          rerank_top_n: int = 3,
                          rerank_model: str = "cross-encoder/stsb-distilroberta-base",
+                         rerank_type: str = "SentenceTransformer",
                          retriever_top_k: int = 6,
                          custom_qa_prompt: str = None,
                          custom_refine_prompt: str = None,
-                         use_query_engines: list[str] = ["base", "rerank", "hybrid", "auto", "hyde", "fusion", "agent", "iter-retgen"],
+                         use_query_engines: list[str] = None,
                          response_mode: str = "refine") -> dict:
 
     """
     This function creates the query engines for the experiment.
     Since most query engines need the same base elements, this function is used to avoid code duplication.
-    :param llm: the OpenAI model to be used. Default is "gpt-3.5-turbo", alternative is gpt-4-turbo
-    :param embedding_name: a name of a HuggingFace embedding. Default is the OpenAI/text-embedding-ada-002
+    :param llm: LLM to be used. Default is OpenAI with "gpt-4o-mini".
+    :param llm_type: Where the LLM comes from, currently supports OpenAI, Cohere and Ollama.
+    :param embedding_name: a name of a HuggingFace embedding. Default is the text-embedding-3-small from OpenAI.
+    :param embedding_type: Where the embedding comes from, valid options are OpenAI, Cohere and Huggingface.
     :param embedding_url: the url of the docker container with the index
     :param rerank_top_n: the number of top nodes to be returned by the reranker. Default is 3.
-    :param rerank_model: which model to use, currently limited to some HuggingFace models
+    :param rerank_model: needs to fit to the rerank types, default it "cross-encoder/stsb-distilroberta-base"
+    :param rerank_type: which Llamaindex module to use for reranking, supports SentenceTransformer and Cohere
     :param retriever_top_k: the number of top nodes to be returned by the retriever. Default is 6.
     :param custom_qa_prompt: the prompt to use for the qa part of the refine response mode.
     :param custom_refine_prompt: the prompt to use for the refine part of the refine response mode.
@@ -77,26 +86,57 @@ def create_query_engines(llm: str = "gpt-40-mini",
     the first part contains settings that are the same for all query engines
     including the LLM, the vectorstore store and the reranker to use.
     """
-    load_dotenv()
-    api_key = os.getenv("OPENAI_API_KEY")
-    # a bit crude because it locks me out of GPT-3.5 but welp, it is how it is
-    if "gpt-4" in llm:
-        Settings.llm = OpenAI(model=llm, api_key=api_key)
-        print(f"using OpenAI with {llm}.")
-    else:
-        Settings.llm = Ollama(model=llm, request_timeout=600)
-        print(f"using Ollama with {llm}.")
+    if use_query_engines == None:
+        use_query_engines = ["base", "rerank", "hybrid", "auto", "hyde", "fusion", "agent", "iter-retgen"]
 
-    # TODO: when creating the ES store, make sure to follow the naming pattern
-    vector_store_name = "service_" + embedding_name.split("/")[1]
-    if not embedding_name == "OpenAI/text-embedding-ada-002":
-        embedding_model = HuggingFaceEmbedding(model_name=embedding_name)
-        Settings.embed_model = embedding_model
-        print(f"using HuggingFaceEmbedding with {embedding_name}.")
-    else:
-        print(f"using OpenAI embedding with {embedding_name}.")
-    # for the model ID I pick a very short abbreviation in order to keep the file names shorter
-    embedding_id = embedding_name.split("/")[1].split("-")[0]
+    load_dotenv()
+
+    print(f"LLM: {llm_type} {llm}.")
+    match llm_type:
+        case 'OpenAI':
+            openAI_api_key = os.getenv("OPENAI_API_KEY")
+            Settings.llm = OpenAI(model=llm, api_key=openAI_api_key)
+        case 'Cohere':
+            cohere_api_key = os.getenv("COHERE_API_KEY")
+            Settings.llm = Cohere(api_key=cohere_api_key, model=llm)
+        case 'Ollama':
+            Settings.llm = Ollama(model=llm, request_timeout=900)
+        case _:
+            raise ValueError(f"Unsupported llm type: {llm_type}")
+
+    print(f"Embedding: {embedding_type} {embedding_name}")
+    match embedding_type:
+        case 'OpenAI':
+            openAI_api_key = os.getenv("OPENAI_API_KEY")
+            embedding_model = OpenAIEmbedding(model_name=embedding_name, api_key=openAI_api_key)
+            embedding_id = embedding_name.split("-")[0]
+        case 'Cohere':
+            cohere_api_key = os.getenv("COHERE_API_KEY")
+            embedding_model = CohereEmbedding(api_key=cohere_api_key, model_name=embedding_name)
+            embedding_id = embedding_name.split("-")[0]
+        case 'HuggingFace':
+            text_instructions: str = "Repräsentiere das Dokument für eine Suche."
+            query_instructions: str = "Finde relevante Dokumente, die die folgende Frage beantworten."
+            # there have been OOM issues for some models, when running on cuda and I don't want to list
+            # individual models, so I'll just run them all on cpu.
+            # also, I wasn't sure what happens if I supply instructions to non instruct models, so I split it here
+            if "instruct" in embedding_name:
+                embedding_model = HuggingFaceEmbedding(model_name=embedding_name,
+                                                       device='cpu',
+                                                       query_instruction=query_instructions,
+                                                       text_instruction=text_instructions)
+            else:
+                embedding_model = HuggingFaceEmbedding(model_name=embedding_name, device='cpu')
+            # HuggingFace models always come with the author like 'author/model-name', so I need to remove the author.
+            # additionally, they can use both '-' and '_' to seperate words in the model_name, so if I want to split it,
+            # I need to filter for both
+            embedding_id = embedding_name.split("/")[1].split("-")[0].split("_")[0]
+        case _:
+            raise ValueError(f"Unsupported embedding type: {embedding_type}")
+
+    Settings.embed_model = embedding_model
+    # changed! I now include the 'author/' for huggingface-models, because it is less code I have to write.
+    vector_store_name = "service_" + embedding_name
 
     # if I want to test different embeddings, I can call a different vector store here
     es_vector_store = ElasticsearchStore(
@@ -106,13 +146,16 @@ def create_query_engines(llm: str = "gpt-40-mini",
 
     storage_context = StorageContext.from_defaults(vector_store=es_vector_store)
 
-    if rerank_model == "rerank-multilingual-v3.0":
-        cohere_api_key = os.getenv("COHERE_API_KEY")
-        reranker = CohereRerank(api_key=cohere_api_key, top_n=rerank_top_n, model=rerank_model)
-        print(f"Using Cohere Reranker: {rerank_model}")
-    else:
-        reranker = SentenceTransformerRerank(top_n=rerank_top_n, model=rerank_model)
-        print(f"Using SentenceTransformerRerank: {rerank_model}")
+    reranker = None
+    print(f"Reranker: {rerank_type} {rerank_model}")
+    match rerank_type:
+        case 'SentenceTransformer':
+            reranker = SentenceTransformerRerank(top_n=rerank_top_n, model=rerank_model)
+        case 'Cohere':
+            cohere_api_key = os.getenv("COHERE_API_KEY")
+            reranker = CohereRerank(api_key=cohere_api_key, top_n=rerank_top_n, model=rerank_model)
+        case _:
+            raise ValueError(f"Unsupported rerank type: {rerank_type}")
 
     index = VectorStoreIndex.from_vector_store(
         vector_store=es_vector_store,

@@ -36,6 +36,7 @@ services:
         hard: -1
     volumes:
       - /media/singularity/Dokumente/Studentenfutter/CogntiveScience/MasterThesis/Code/master_thesis/elastic_persistent_dir/city_services:/usr/share/elasticsearch/data
+      #- /home/hendrik/Nextcloud/CognitiveScience/MasterThesis/Code/master_thesis/elastic_persistent_dir/city_services:/usr/share/elasticsearch/data
     ports:
       - 9200:9200
     networks:

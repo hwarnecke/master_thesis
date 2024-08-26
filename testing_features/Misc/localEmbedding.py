@@ -15,7 +15,7 @@ def old():
     embed_model = HuggingFaceEmbedding(model_name=model_name, device="cpu")
 
     # test if it worked
-    embeddings = embed_model.get_text_embedding("Hallo Welt!")
+    embeddings = embed_model.get_text_embedding("Die rasche Entwicklung vom Agrar- zum Industriestaat vollzog sich während der Gründerzeit in der zweiten Hälfte des 19. Jahrhunderts. Nach dem Ersten Weltkrieg wurde 1918 die Monarchie abgeschafft und die demokratische Weimarer Republik konstituiert. Ab 1933 führte die nationalsozialistische Diktatur zu politischer und rassistischer Verfolgung und gipfelte in der Ermordung von sechs Millionen Juden und Angehörigen anderer Minderheiten wie Sinti und Roma. Der vom NS-Staat 1939 begonnene Zweite Weltkrieg endete 1945 mit der Niederlage der Achsenmächte. Das von den Siegermächten besetzte Land wurde 1949 geteilt, nachdem bereits 1945 seine Ostgebiete teils unter polnische, teils sowjetische Verwaltungshoheit gestellt worden waren. Der Gründung der Bundesrepublik als demokratischer westdeutscher Teilstaat mit Westbindung am 23. Mai 1949 folgte die Gründung der sozialistischen DDR am 7. Oktober 1949 als ostdeutscher Teilstaat unter sowjetischer Hegemonie. Die innerdeutsche Grenze war nach dem Berliner Mauerbau (ab 13. August 1961) abgeriegelt. Nach der friedlichen Revolution in der DDR 1989 erfolgte die Lösung der deutschen Frage durch die Wiedervereinigung beider Landesteile am 3. Oktober 1990, womit auch die Außengrenzen Deutschlands als endgültig anerkannt wurden. Durch den Beitritt der fünf ostdeutschen Länder sowie die Wiedervereinigung von Ost- und West-Berlin zur heutigen Bundeshauptstadt zählt die Bundesrepublik Deutschland seit 1990 sechzehn Bundesländer. Seit der Wiedervereinigung 1990 hat sich Deutschland zu einer der führenden Wirtschaftsnationen weltweit entwickelt. Anfangs stellte die Integration der DDR eine große Herausforderung dar, doch durch umfangreiche Investitionen und Reformen konnte die Wirtschaft stabilisiert werden. Insbesondere die Arbeitsmarktreformen der Agenda 2010 führten zu einer deutlichen Reduzierung der Arbeitslosigkeit und erhöhten die Wettbewerbsfähigkeit des Landes. Heute ist Deutschland die größte Volkswirtschaft der EU und eine der bedeutendsten Exportnationen weltweit. Das Land verfügt über eine gut entwickelte Infrastruktur, ein starkes Bildungssystem und eine hoch qualifizierte Arbeitskraft, was es zu einem attraktiven Standort für Unternehmen und Investitionen macht. Deutschland gilt heutzutage als eine der stabilsten und wohlhabendsten Nationen der Welt.")
     print(len(embeddings))
     print(embeddings[:5])
 
@@ -70,6 +70,10 @@ def main():
     query = "Wie alt ist das Grundgesetz?"
     #response = query_engine.query(query)
     #print(response)
+
+def instructions():
+    text_instructions: str = "Repräsentiere das Dokument für eine Suche."
+    query_instructions: str = "Finde relevante Dokumente, die die folgende Frage beantworten."
 
 if __name__ == "__main__":
     old()

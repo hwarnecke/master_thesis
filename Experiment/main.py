@@ -22,13 +22,16 @@ and save them to disk.
 def run_experiment(questions: str = "questions.json",
                    custom_qa_path: str = None,
                    custom_refine_path: str = None,
-                   embedding: str = "OpenAI/text-embedding-ada-002",
+                   embedding: str = "text-embedding-3-small",
+                   embedding_type: str = "OpenAI",
                    llm: str = "gpt-4o-mini",
+                   llm_type: str = "OpenAI",
                    rerank_top_n: int = 3,
                    rerank_model: str = "cross-encoder/stsb-distilroberta-base",
-                   retrieval_top_k: int = 6,
+                   rerank_type: str = "SentenceTransformer",
+                   retrieval_top_k: int = 12,
                    use_query_engines: list[str] = None,
-                   evaluate: bool = True,
+                   evaluate: bool = False,
                    response_mode: str = "refine"
                    ):
     """
@@ -79,10 +82,13 @@ def run_experiment(questions: str = "questions.json",
         use_query_engines = ["base", "rerank", "hybrid", "auto", "hyde", "fusion", "agent", "iter-retgen"]
 
     query_engines = create_query_engines(llm=llm,
+                                         llm_type=llm_type,
                                          embedding_name=embedding,
+                                         embedding_type=embedding_type,
                                          rerank_top_n=rerank_top_n,
                                          retriever_top_k=retrieval_top_k,
                                          rerank_model= rerank_model,
+                                         rerank_type=rerank_type,
                                          custom_qa_prompt=custom_qa_content,
                                          custom_refine_prompt=custom_refine_content,
                                          use_query_engines=use_query_engines,
@@ -350,21 +356,6 @@ def extract_source_nodes(response, identifier: str = "") -> dict[str, str]:
         source_nodes.update(node_dict)
     return source_nodes
 
-def run_qe(name: str = None):
-    custom_qa_path = "PromptTemplates/german_qa_template.txt"
-    custom_refine_path = "PromptTemplates/german_refine_template.txt"
-    qes = None
-    if name:
-        qes = [name]
-
-    run_experiment(custom_qa_path=custom_qa_path,
-                   custom_refine_path=custom_refine_path,
-                   questions="questions.json",
-                   evaluate=False,
-                   llm="sauerkraut_hero_q6",
-                   embedding="jinaai/jina-embeddings-v2-base-de",
-                   use_query_engines=qes)
-
 
 def compare_embeddings():
     """
@@ -377,16 +368,23 @@ def compare_embeddings():
     custom_qa_path = "PromptTemplates/german_qa_template.txt"
     custom_refine_path = "PromptTemplates/german_refine_template.txt"
     qes = ["base"]
-    embedding_models = ["OpenAI/text-embedding-ada-002",
-                        "jinaai/jina-embeddings-v2-base-de",
-                        "intfloat/multilingual-e5-large-instruct",
-                        "T-Systems-onsite/cross-en-de-roberta-sentence-transformer"
-                        ]
-    for model in embedding_models:
+    embedding_models = {"aari1995/German_Semantic_V3b": "HuggingFace",
+                        "T-Systems-onsite/cross-en-de-roberta-sentence-transformer": "HuggingFace",
+                        "jinaai/jina-embeddings-v2-base-de": "HuggingFace",
+                        "jinaai/jina-clip-v1": "HuggingFace",
+                        "intfloat/multilingual-e5-large-instruct": "HuggingFace",
+                        "Alibaba-NLP/gte-multilingual-base": "HuggingFace",
+                        "dunzhang/stella_en_1.5B_v5": "HuggingFace",
+                        "GritLM/GritLM-7B": "HuggingFace",
+                        "embed-multilingual-v3.0": "Cohere",
+                        "text-embedding-3-small": "OpenAI"}
+
+    for model, type in embedding_models.items():
         run_experiment(custom_qa_path=custom_qa_path,
                        custom_refine_path=custom_refine_path,
                        evaluate=False,
                        embedding=model,
+                       embedding_type=type,
                        use_query_engines=qes)
 
 def main_experiment():
@@ -402,6 +400,7 @@ def main_experiment():
                    use_query_engines=["base", "rerank", "fusion", "hyde", "hybrid"],
                    response_mode="no_text",
                    retrieval_top_k=3)
+
 
 def reranker():
     custom_qa_path = "PromptTemplates/german_qa_template.txt"

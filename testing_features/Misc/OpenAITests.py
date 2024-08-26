@@ -7,6 +7,7 @@ from openai import OpenAI
 from llama_index.core import Settings
 from llama_index.core.callbacks import CallbackManager, TokenCountingHandler
 from llama_index.llms.openai import OpenAI as llamaOpenAI
+from llama_index.embeddings.openai import OpenAIEmbedding
 
 """
 testing if the token counter can also count the OpenAI calls.
@@ -127,6 +128,15 @@ def new_model():
     response = Settings.llm.complete("Who are you?")
     print(response)
 
+def embedding_model():
+    load_dotenv()
+    api_key = os.getenv("OPENAI_API_KEY")
+    model = "text-embedding-3-small"
+    Settings.embed_model = OpenAIEmbedding(model_name=model)
+    test = "Hallo, wohin des Wegs die Dame?"
+    embedding = Settings.embed_model.get_query_embedding(test)
+    print(len(embedding))
+
 
 if __name__ == "__main__":
-    new_model()
+    embedding_model()
