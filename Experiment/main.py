@@ -368,20 +368,23 @@ def compare_embeddings():
     custom_qa_path = "PromptTemplates/german_qa_template.txt"
     custom_refine_path = "PromptTemplates/german_refine_template.txt"
     qes = ["base"]
-    embedding_models = {"aari1995/German_Semantic_V3b": "HuggingFace",
-                        "T-Systems-onsite/cross-en-de-roberta-sentence-transformer": "HuggingFace",
-                        "jinaai/jina-embeddings-v2-base-de": "HuggingFace",
-                        "intfloat/multilingual-e5-large-instruct": "HuggingFace",
-                        "Alibaba-NLP/gte-multilingual-base": "HuggingFace",
-                        "dunzhang/stella_en_1.5B_v5": "HuggingFace",
-                        "GritLM": "Ollama",
+    embedding_models = {
+                        # "aari1995/German_Semantic_V3b": "HuggingFace",
+                        # "T-Systems-onsite/cross-en-de-roberta-sentence-transformer": "HuggingFace",
+                        # "jinaai/jina-embeddings-v2-base-de": "HuggingFace",
+                        # "intfloat/multilingual-e5-large-instruct": "HuggingFace",
+                        # "Alibaba-NLP/gte-multilingual-base": "HuggingFace",
+                        # "dunzhang/stella_en_1.5B_v5": "HuggingFace",
+                        "gritlm": "Ollama",
                         "embed-multilingual-v3.0": "Cohere",
                         "text-embedding-3-small": "OpenAI"}
 
     for model, type in embedding_models.items():
         run_experiment(custom_qa_path=custom_qa_path,
                        custom_refine_path=custom_refine_path,
+                       questions="questions_extended.json",
                        evaluate=False,
+                       response_mode="no_text",
                        embedding=model,
                        embedding_type=type,
                        use_query_engines=qes)
@@ -419,4 +422,4 @@ def reranker():
 
 
 if __name__ == "__main__":
-    reranker()
+    compare_embeddings()

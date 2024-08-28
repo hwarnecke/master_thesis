@@ -125,9 +125,10 @@ def create_query_engines(llm: str = "gpt-40-mini",
                 embedding_model = HuggingFaceEmbedding(model_name=embedding_name,
                                                        device='cpu',
                                                        query_instruction=query_instructions,
-                                                       text_instruction=text_instructions)
+                                                       text_instruction=text_instructions,
+                                                       trust_remote_code=True)
             else:
-                embedding_model = HuggingFaceEmbedding(model_name=embedding_name, device='cpu')
+                embedding_model = HuggingFaceEmbedding(model_name=embedding_name, device='cpu', trust_remote_code=True)
             # HuggingFace models always come with the author like 'author/model-name', so I need to remove the author.
             # additionally, they can use both '-' and '_' to seperate words in the model_name, so if I want to split it,
             # I need to filter for both
@@ -139,6 +140,7 @@ def create_query_engines(llm: str = "gpt-40-mini",
             embedding_model = OllamaEmbedding(
                 model_name=embedding_name
             )
+            embedding_id = embedding_name
         case _:
             raise ValueError(f"Unsupported embedding type: {embedding_type}")
 
