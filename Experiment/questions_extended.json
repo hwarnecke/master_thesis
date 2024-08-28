@@ -1,98 +1,147 @@
 [
   {
     "question": "Wie teuer ist eine Umweltplakette?",
-    "answer":  "Eine Umweltplakette kostet 5,10€"
+    "answer":  "Eine Umweltplakette kostet 5,10€",
+    "names": ["Umweltzone"],
+    "ids": ["4ff3ba3c-0874-4daf-b536-d323e8e2b4be"]
   },
   {
     "question":  "Welche Fristen muss ich beim Anmelden von Osterfeuern beachten?",
     "answer":  "Der Antrag muss beim Fachbereich Umwelt und Klimaschutz der Stadt Osnabrück spätestens 2 Wochen vor Ostern vorliegen."
+    "names": ["Osterfeuer"],
+    "ids": ["84ada62f-7031-410a-b8e7-a11406f6ac96"]
   },
   {
     "question": "Wo findet Dienstags der Wochenmarkt statt?",
-    "answer": "An der Lerchenstraße von 08:00 bis 13:00."
+    "answer": "An der Lerchenstraße von 08:00 bis 13:00.",
+    "names": ["Märkte"],
+    "ids": ["476c92ff-f730-4e1d-9262-5731b3d9613c"]
   },
   {
     "question": "Kann ich meinen ausländischen Jagdschein in Deutschland nutzen?",
-    "answer": "Nein, nichtdeutsche Jagdscheine berechtigen weder zur Jagd noch zum Waffenerwerb."
+    "answer": "Nein, nichtdeutsche Jagdscheine berechtigen weder zur Jagd noch zum Waffenerwerb.",
+    "names": ["Jagdschein"],
+    "ids": ["81ec170c-cfa7-4454-bb99-78fba6901c91"]
   },
   {
     "question": "Wie teuer ist ein Bewohnerparkausweis?",
-    "answer": "60€ bei 6 Monaten Gültigkeit und 90€ bei 12 Monaten Gültigkeit. Ein Kennzeichenwechsel kostet 5€."
+    "answer": "60€ bei 6 Monaten Gültigkeit und 90€ bei 12 Monaten Gültigkeit. Ein Kennzeichenwechsel kostet 5€.",
+    "names": ["Bewohnerparkausweis"],
+    "ids": ["c57574ed-dedc-4ddc-b3d3-7a0e83c3102b"]
   },
   {
     "question": "Bietet die VHS Kurse für Gebärdensprache an?",
-    "answer": "Ja, es gibt Kurse für Gebärdensprache an der Volkshochschule Osnabrück."
+    "answer": "Ja, es gibt Kurse für Gebärdensprache an der Volkshochschule Osnabrück.",
+    "names": ["Bildungsangebote"],
+    "ids": ["e34573ab-42e6-4d12-a554-d9204fccc55e"]
   },
   {
     "question": "Wie funktioniert ElterngeldPlus?",
-    "answer": "Eltern die in Teilzeit arbeiten können die Hälfte des Basiselterngelds bekommen, aber dafür für die doppelte Zeit."
+    "answer": "Eltern die in Teilzeit arbeiten können die Hälfte des Basiselterngelds bekommen, aber dafür für die doppelte Zeit.",
+    "names": ["Elterngeld und ElterngeldPlus"],
+    "ids": ["ea11bdd5-2673-4f1b-8104-56c4fbffaa32"]
   },
   {
     "question": "Wie alt muss ich sein um einen Fischereischein zu erwerben?",
-    "answer": "Mindestens 14 Jahre alt."
+    "answer": "Mindestens 14 Jahre alt.",
+    "names": ["Fischereischein"],
+    "ids": ["827e94ec-c5f6-483b-9258-0183e3152b1"]
   },
   {
     "question": "Welche Einrichtung ist für die Jugendleiter-Card zuständig und wo haben sie ihren Standort?",
-    "answer": "Für die Jugendleiter-Card ist die Einrichtung Verwaltungsteam Kinder und Jugend zuständig. Diese sitzen im Stadthaus 1 am Natruper-Tor-Wall 2."
+    "answer": "Für die Jugendleiter-Card ist die Einrichtung Verwaltungsteam Kinder und Jugend zuständig. Diese sitzen im Stadthaus 1 am Natruper-Tor-Wall 2.",
+    "names": ["Verwaltungsteam Kinder und Jugend","Jugendleiter-Card"],
+    "ids": ["638d1ee1-d6c6-4b24-afe9-86f130ac382c","37452049-b711-43da-b0c6-fc33d1a2b17c"]
+
   },
   {
     "question": "Ich habe Fragen zu einem Tiergehege, wen kann ich anrufen?",
-    "answer": "Für Tiergehege ist Frau Schneider zuständig. Ihre Telefonnummer ist die 0541 323-2331."
+    "answer": "Für Tiergehege ist Frau Schneider zuständig. Ihre Telefonnummer ist die 0541 323-2331.",
+    "names": ["Frau Schneider", "Tiergehege"],
+    "ids": ["e901bcaa-4352-4d42-8d1b-b2e766c9f358", "48c244fa-df6d-498d-a346-42316a84bcb9"]
   },
   {
     "question": "Wer ist die Teamleitung für die Straßenreinigung und wie kann ich die Person erreichen?",
-    "answer": "Frau Knopf ist als Teamleitung zuständig. Ihre Telefonnummer lautet 05413233300 und ihre Email ist die osb@osnabrueck.de."
+    "answer": "Frau Knopf ist als Teamleitung zuständig. Ihre Telefonnummer lautet 05413233300 und ihre Email ist die osb@osnabrueck.de.",
+    "names": ["Frau Knof", "Straßenreinigung"],
+    "ids": ["3dc7589d-33b0-4db8-b854-f026c7cdbd70", "210fdd2d-fb1a-4013-8222-9029023986f5"]
   },
   {
     "question": "Ich muss einen neuen Personalausweis, Reisepass und Ersatzführerschein beantragen. Wie teuer ist das jeweils?",
-    "answer": "Der Personalausweis kostet 22,80€. Ein Reisepass kostet 37,50€. Ein Ersatzführerschein kostet 33,60€."
+    "answer": "Der Personalausweis kostet 22,80€. Ein Reisepass kostet 37,50€. Ein Ersatzführerschein kostet 33,60€.",
+    "names": ["Personalausweis", "Reisepass", "Ersatzführerschein"],
+    "ids": ["956e2b53-fb91-4c53-9259-b94e87d3f4e6", "21b01bae-bf41-42f2-a2ad-1f3d36abee5", "a6f734cd-70d2-4773-a60f-31d32aecb65f"]
   },
   {
     "question": "Wo muss ich hin um einen Büchereiausweis zu beantragen?",
-    "answer": "Zur Stadtbibliothek, Markt 1 49074 Osnabrück"
+    "answer": "Zur Stadtbibliothek, Markt 1 49074 Osnabrück",
+    "names": ["Stadtbibliothek", "Bibliotheksausweis"],
+    "ids": ["03d61c73-b2a2-4bfc-a918-32d520c4b92a", "b0d60150-9ab6-450d-80fa-e8e255d496ac"]
   },
   {
     "question": "Mein Kennzeichen wurde geklaut, wen muss ich jetzt anrufen?",
-    "answer": "Es muss ein Termin bei der Kfz-Zulassung gemacht werden. Dies geht online über die Terminvergabe oder telefonisch unter 0541/323-3332."
+    "answer": "Es muss ein Termin bei der Kfz-Zulassung gemacht werden. Dies geht online über die Terminvergabe oder telefonisch unter 0541/323-3332.",
+    "names": ["Kfz-Zulassungen, Güterverkehr, Personenverkehr", "Kennzeichenverlust-Diebstahl"],
+    "ids": ["f1ab197f-cf63-4a01-ad1f-35750106d14c", "734ea3f0-1441-42f5-a9b1-70835c5b3961"]
   },
   {
     "question": "Bei wem kann ich mich melden, wenn ich das Stadtwappen nutzen möchte?",
-    "answer": "Dafür ist das Team für Ratsangelegenheiten zuständig. Erreichbar per Email unter ratsbuero@osnabrueck.de oder telefonisch unter 05413232155."
+    "answer": "Dafür ist das Team für Ratsangelegenheiten zuständig. Erreichbar per Email unter ratsbuero@osnabrueck.de oder telefonisch unter 05413232155.",
+    "names": ["Ratsangelegenheiten", "Nutzung des Stadtwappens"],
+    "ids": ["58849465-7aad-49e2-8b5a-2e0ce404ac74", "a91c9b62-55c7-47f2-8ce0-bfe66aa4cf4b"]
   },
   {
     "question": "Ich möchte einen gefährlichen Hund halten. Welche Unterlagen brauche ich und wie hoch ist die Hundesteuer?",
-    "answer": "Es wird ein Führungszeugnis, ein Wesenstest und ein Sachkundenachweis benötigt. Die Hundesteuer für gefährliche Hunde liegt bei 720€."
+    "answer": "Es wird ein Führungszeugnis, ein Wesenstest und ein Sachkundenachweis benötigt. Die Hundesteuer für gefährliche Hunde liegt bei 720€.",
+    "names": ["Hunde", "Hundesteuer"],
+    "ids": ["97a918c6-97f5-4f0a-825e-b20d11dcfa8f", "9185c766-e725-4f50-b7c8-999c9a9f490d"]
   },
   {
     "question": "Ich bin Schüler und brauche Geld.",
-    "answer": "Grundsätzlich können Schülerinnen und Schüler, die einen berufsqualifizierenden Abschluss oder einen weiterführenden Schulabschluss erreichen wollen, BAföG beziehen. Für diejenigen, die eine allgemeinbildende Schule besuchen, gilt das aber erst ab Klasse 10 und auch nur, wenn eine Unterbringung außerhalb des Elternhauses notwendig ist. Das ist der Fall, wenn der gewünschte Abschluss nicht in der Nähe gemacht werden kann."
+    "answer": "Grundsätzlich können Schülerinnen und Schüler, die einen berufsqualifizierenden Abschluss oder einen weiterführenden Schulabschluss erreichen wollen, BAföG beziehen. Für diejenigen, die eine allgemeinbildende Schule besuchen, gilt das aber erst ab Klasse 10 und auch nur, wenn eine Unterbringung außerhalb des Elternhauses notwendig ist. Das ist der Fall, wenn der gewünschte Abschluss nicht in der Nähe gemacht werden kann.",
+    "names": ["Schüler-Bafög"],
+    "ids": ["5ba8215e-cfee-4e99-993c-5f829d4e0422"]
   },
   {
     "question": "Mir wurd der Lappen weggenommen, wie bekomme ich den wieder?",
-    "answer": "Um einen entzogenen Führerschein wieder zu bekommen muss eine Neuerteilung beantragt werden. Dafür ist ein Personalausweis und ein Führungszeugnis notwendig. Außerdem werden 155,30€ für die Fahrerlaubnis und 13€ für das Führungszeugnis fällig."
+    "answer": "Um einen entzogenen Führerschein wieder zu bekommen muss eine Neuerteilung beantragt werden. Dafür ist ein Personalausweis und ein Führungszeugnis notwendig. Außerdem werden 155,30€ für die Fahrerlaubnis und 13€ für das Führungszeugnis fällig.",
+    "names": ["Neuerteilung einer Fahrerlaubnis"],
+    "ids": ["0927bc81-0724-4005-b5d1-a7853f0707d5"]
   },
   {
     "question": "What documents do I need to get a visa for foreign students?",
-    "answer": "In der Regel werden folgende Unterlagen benötigt:\n- ausgefülltes Antragsformular\n- gültiger Nationalpass\n- ein Passfoto\n- Immatrikulationsbescheinigung\n- Bescheinigung über die voraussichtliche Studiendauer\n- Nachweis über Krankenversicherungsschutz\n- Finanzierungsnachweis, in der Regel Kontoauszüge der letzten drei Monate\n- Mietvertrag oder Einzugsbestätigung des Vermieters"
+    "answer": "In der Regel werden folgende Unterlagen benötigt:\n- ausgefülltes Antragsformular\n- gültiger Nationalpass\n- ein Passfoto\n- Immatrikulationsbescheinigung\n- Bescheinigung über die voraussichtliche Studiendauer\n- Nachweis über Krankenversicherungsschutz\n- Finanzierungsnachweis, in der Regel Kontoauszüge der letzten drei Monate\n- Mietvertrag oder Einzugsbestätigung des Vermieters",
+    "names": ["Ausländische Studierende"],
+    "ids": ["a528687a-9998-44b1-bd02-026ddaa5bd4a"]
   },
   {
     "question": "Ich ziehe raus aufs Land, brauche ich ein neues Nummernschild?",
-    "answer": "Fahrzeughalter, die ihren Wohnsitz von der Stadt Osnabrück in den Landkreis oder umgekehrt verlagern, benötigen kein neues Autokennzeichen mehr. Sie müssen allerdings der Zulassungsstelle ihre neue Adresse bekannt geben und sich dort neue Fahrzeugpapiere (ZB I und ZB II) mit dem aktuellen Wohnort ausstellen lassen. Hierzu ist auch eine elektronische Versicherungsbestätigung (eVB) erforderlich."
+    "answer": "Fahrzeughalter, die ihren Wohnsitz von der Stadt Osnabrück in den Landkreis oder umgekehrt verlagern, benötigen kein neues Autokennzeichen mehr. Sie müssen allerdings der Zulassungsstelle ihre neue Adresse bekannt geben und sich dort neue Fahrzeugpapiere (ZB I und ZB II) mit dem aktuellen Wohnort ausstellen lassen. Hierzu ist auch eine elektronische Versicherungsbestätigung (eVB) erforderlich.",
+    "names": ["Kfz-Zulassung"],
+    "ids": ["8134ad7d-5825-4355-b970-45a55069151d"]
   },
   {
     "question": "Kann ich die Asche von meinen Vater einfach im Wald verstreuen?",
-    "answer": "Nein, in Niedersachsen besteht gesetzliche Friedhofspflicht."
+    "answer": "Nein, in Niedersachsen besteht gesetzliche Friedhofspflicht.",
+    "names": ["Bestattung"],
+    "ids": ["498b9775-d6e4-4c49-a502-779dc8d97635"]
   },
   {
     "question": "Ich möchte Menschen die Zukunft aus Karten lesen und damit Geld verdienen. Kann ich das offiziell anmelden?",
-    "answer": "Nein, Hellsehen kann nicht als Gewerbe angemeldet werden."
+    "answer": "Nein, Hellsehen kann nicht als Gewerbe angemeldet werden.",
+    "names": ["Gewerbeanmeldung"],
+    "ids": ["986a096d-f7ae-4bc2-82ee-805f8f578e5e"]
   },
   {
     "question": "Die Laterne vor meinem Haus funktioniert nicht mehr, kann ich das irgendwo melden?",
-    "answer": "Störungen an Straßenbeleuchtungen können bei der SWO Netz GmbH gemeldet werden. Dies geht über EMOS oder telefonisch unter 0541 / 2002-2010."
+    "answer": "Störungen an Straßenbeleuchtungen können bei der SWO Netz GmbH gemeldet werden. Dies geht über EMOS oder telefonisch unter 0541 / 2002-2010.",
+    "names": ["Straßenunterhaltung / Aufgrabungs- und Versorgungsmanagement"],
+    "ids": ["baa15020-fa5b-4194-ae51-d245a0261979"]
   },
   {
     "question": "I'm on vacation from the states, can I just use my drivers licence in Germany or do I need anything special?",
-    "answer": "Für Besucher aus den USA ist es sinnvoll einen internationalen Führerschein zu beantragen."
+    "answer": "Für Besucher aus den USA ist es sinnvoll einen internationalen Führerschein zu beantragen.",
+    "names": ["Internationaler Führerschein"],
+    "ids": ["3e6d525e-0d08-4a88-ac75-daf2fe70ed8c"]
   }
 ]
