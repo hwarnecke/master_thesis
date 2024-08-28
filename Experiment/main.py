@@ -371,11 +371,10 @@ def compare_embeddings():
     embedding_models = {"aari1995/German_Semantic_V3b": "HuggingFace",
                         "T-Systems-onsite/cross-en-de-roberta-sentence-transformer": "HuggingFace",
                         "jinaai/jina-embeddings-v2-base-de": "HuggingFace",
-                        "jinaai/jina-clip-v1": "HuggingFace",
                         "intfloat/multilingual-e5-large-instruct": "HuggingFace",
                         "Alibaba-NLP/gte-multilingual-base": "HuggingFace",
                         "dunzhang/stella_en_1.5B_v5": "HuggingFace",
-                        "GritLM/GritLM-7B": "HuggingFace",
+                        "GritLM": "Ollama",
                         "embed-multilingual-v3.0": "Cohere",
                         "text-embedding-3-small": "OpenAI"}
 

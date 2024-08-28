@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 import datetime
 from llama_index.core import Settings, get_response_synthesizer, VectorStoreIndex, StorageContext
+from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.llms.openai import OpenAI
 from llama_index.llms.ollama import Ollama
 from llama_index.vector_stores.elasticsearch import ElasticsearchStore
@@ -71,7 +72,7 @@ def create_query_engines(llm: str = "gpt-40-mini",
     :param llm: LLM to be used. Default is OpenAI with "gpt-4o-mini".
     :param llm_type: Where the LLM comes from, currently supports OpenAI, Cohere and Ollama.
     :param embedding_name: a name of a HuggingFace embedding. Default is the text-embedding-3-small from OpenAI.
-    :param embedding_type: Where the embedding comes from, valid options are OpenAI, Cohere and Huggingface.
+    :param embedding_type: Where the embedding comes from, valid options are OpenAI, Cohere, Huggingface and Ollama
     :param embedding_url: the url of the docker container with the index
     :param rerank_top_n: the number of top nodes to be returned by the reranker. Default is 3.
     :param rerank_model: needs to fit to the rerank types, default it "cross-encoder/stsb-distilroberta-base"
@@ -130,13 +131,19 @@ def create_query_engines(llm: str = "gpt-40-mini",
             # HuggingFace models always come with the author like 'author/model-name', so I need to remove the author.
             # additionally, they can use both '-' and '_' to seperate words in the model_name, so if I want to split it,
             # I need to filter for both
-            embedding_id = embedding_name.split("/")[1].split("-")[0].split("_")[0]
+            embedding_name = embedding_name.split("/")[1]
+            embedding_id = embedding_name.split("-")[0].split("_")[0]
+
+        case 'Ollama':
+            # you have to set up the model before you can run this
+            embedding_model = OllamaEmbedding(
+                model_name=embedding_name
+            )
         case _:
             raise ValueError(f"Unsupported embedding type: {embedding_type}")
 
     Settings.embed_model = embedding_model
-    # changed! I now include the 'author/' for huggingface-models, because it is less code I have to write.
-    vector_store_name = "service_" + embedding_name
+    vector_store_name = "service_" + embedding_name.lower()
 
     # if I want to test different embeddings, I can call a different vector store here
     es_vector_store = ElasticsearchStore(

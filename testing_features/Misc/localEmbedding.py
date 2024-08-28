@@ -2,6 +2,7 @@
 # this is important as the application and data will be in german, so a german embedding model should be used
 
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 from llama_index.core import Settings
 from llama_index.llms.openai import OpenAI
@@ -10,9 +11,9 @@ from llama_index.core import Document
 import os
 
 def old():
-    model_name = "GritLM/GritLM-7B"
+    model_name = "jinaai/jina-clip-v1"
 
-    embed_model = HuggingFaceEmbedding(model_name=model_name, device="cpu")
+    embed_model = HuggingFaceEmbedding(model_name=model_name, device="cpu", trust_remote_code=True, max_length=512)
 
     # test if it worked
     embeddings = embed_model.get_text_embedding("Die rasche Entwicklung vom Agrar- zum Industriestaat vollzog sich während der Gründerzeit in der zweiten Hälfte des 19. Jahrhunderts. Nach dem Ersten Weltkrieg wurde 1918 die Monarchie abgeschafft und die demokratische Weimarer Republik konstituiert. Ab 1933 führte die nationalsozialistische Diktatur zu politischer und rassistischer Verfolgung und gipfelte in der Ermordung von sechs Millionen Juden und Angehörigen anderer Minderheiten wie Sinti und Roma. Der vom NS-Staat 1939 begonnene Zweite Weltkrieg endete 1945 mit der Niederlage der Achsenmächte. Das von den Siegermächten besetzte Land wurde 1949 geteilt, nachdem bereits 1945 seine Ostgebiete teils unter polnische, teils sowjetische Verwaltungshoheit gestellt worden waren. Der Gründung der Bundesrepublik als demokratischer westdeutscher Teilstaat mit Westbindung am 23. Mai 1949 folgte die Gründung der sozialistischen DDR am 7. Oktober 1949 als ostdeutscher Teilstaat unter sowjetischer Hegemonie. Die innerdeutsche Grenze war nach dem Berliner Mauerbau (ab 13. August 1961) abgeriegelt. Nach der friedlichen Revolution in der DDR 1989 erfolgte die Lösung der deutschen Frage durch die Wiedervereinigung beider Landesteile am 3. Oktober 1990, womit auch die Außengrenzen Deutschlands als endgültig anerkannt wurden. Durch den Beitritt der fünf ostdeutschen Länder sowie die Wiedervereinigung von Ost- und West-Berlin zur heutigen Bundeshauptstadt zählt die Bundesrepublik Deutschland seit 1990 sechzehn Bundesländer. Seit der Wiedervereinigung 1990 hat sich Deutschland zu einer der führenden Wirtschaftsnationen weltweit entwickelt. Anfangs stellte die Integration der DDR eine große Herausforderung dar, doch durch umfangreiche Investitionen und Reformen konnte die Wirtschaft stabilisiert werden. Insbesondere die Arbeitsmarktreformen der Agenda 2010 führten zu einer deutlichen Reduzierung der Arbeitslosigkeit und erhöhten die Wettbewerbsfähigkeit des Landes. Heute ist Deutschland die größte Volkswirtschaft der EU und eine der bedeutendsten Exportnationen weltweit. Das Land verfügt über eine gut entwickelte Infrastruktur, ein starkes Bildungssystem und eine hoch qualifizierte Arbeitskraft, was es zu einem attraktiven Standort für Unternehmen und Investitionen macht. Deutschland gilt heutzutage als eine der stabilsten und wohlhabendsten Nationen der Welt.")
@@ -74,6 +75,19 @@ def main():
 def instructions():
     text_instructions: str = "Repräsentiere das Dokument für eine Suche."
     query_instructions: str = "Finde relevante Dokumente, die die folgende Frage beantworten."
+
+
+def ollama():
+    modelname = "GritLM"
+    ollama_embedding = OllamaEmbedding(
+        model_name=modelname
+    )
+    Settings.embed_model = ollama_embedding
+    text = "Moin Moin, was geht? Alles klar bei dir? Wie spät?"
+    embedding = Settings.embed_model.get_text_embedding(text)
+    print(len(embedding))
+    print(embedding[:6])
+
 
 if __name__ == "__main__":
     old()

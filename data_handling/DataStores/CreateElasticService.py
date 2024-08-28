@@ -1,6 +1,8 @@
 import os, sys
 from pathlib import Path
 
+from llama_index.embeddings.ollama import OllamaEmbedding
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from dotenv import load_dotenv
@@ -67,16 +69,23 @@ def create_index(models: dict,
                                                            device='cpu',
                                                            query_instruction=query_instructions,
                                                            text_instruction=text_instructions,
-                                                           max_length=512)
+                                                           max_length=512,
+                                                           trust_remote_code=True)
                 else:
-                    embedding_model = HuggingFaceEmbedding(model_name=embedding_name, device='cpu')
-                # HuggingFace models always comes like 'author/model-name', so I need to remove the author.
-                # additionally, they can use both '-' and '_' to seperate words in the model_name,
-                # so if I want to split it, I need to filter for both
+                    embedding_model = HuggingFaceEmbedding(model_name=embedding_name, device='cpu',
+                                                           max_length=512,
+                                                           trust_remote_code=True)
+                embedding_name = embedding_name.split("/")[1]    # '/' is not allowed in elastic
+            case 'Ollama':
+                # you have to set up the model before you can run this
+                embedding_model = OllamaEmbedding(
+                    model_name=embedding_name
+                )
             case _:
                 raise ValueError(f"Unsupported embedding type: {embedding_type}")
 
-        name = "service_" + embedding_name
+        name = "service_" + embedding_name.lower()
+
         Settings.embed_model = embedding_model
         print(f"starting: {name}")
 
@@ -93,14 +102,13 @@ def create_index(models: dict,
 
 def main():
 
-    embedding_models = {"aari1995/German_Semantic_V3b": "HuggingFace",
+    embedding_models = {"dunzhang/stella_en_1.5B_v5": "HuggingFace",
+                        "Alibaba-NLP/gte-multilingual-base": "HuggingFace",
+                        "intfloat/multilingual-e5-large-instruct": "HuggingFace",
                         "T-Systems-onsite/cross-en-de-roberta-sentence-transformer": "HuggingFace",
                         "jinaai/jina-embeddings-v2-base-de": "HuggingFace",
-                        "jinaai/jina-clip-v1": "HuggingFace",
-                        "intfloat/multilingual-e5-large-instruct": "HuggingFace",
-                        "Alibaba-NLP/gte-multilingual-base": "HuggingFace",
-                        "dunzhang/stella_en_1.5B_v5": "HuggingFace",
-                        "GritLM/GritLM-7B": "HuggingFace",
+                        "gritlm": "Ollama",
+                        "aari1995/German_Semantic_V3b": "HuggingFace",
                         "embed-multilingual-v3.0": "Cohere",
                         "text-embedding-3-small": "OpenAI"}
 
