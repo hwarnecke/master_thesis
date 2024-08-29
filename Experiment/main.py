@@ -400,7 +400,6 @@ def main_experiment():
                    custom_refine_path=custom_refine_path,
                    evaluate=False,
                    use_query_engines=["base", "rerank", "fusion", "hyde", "hybrid"],
-                   response_mode="no_text",
                    retrieval_top_k=3)
 
 
