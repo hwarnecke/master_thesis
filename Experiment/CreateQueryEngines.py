@@ -21,7 +21,7 @@ from llama_index.llms.cohere import Cohere
 from CombinedRetriever import CombinedRetriever
 from FusionRetriever import FusionRetriever
 from ModifiedQueryEngine import ModifiedQueryEngine
-from Agent import Agent
+from LlamaAgent import LlamaAgent
 from QueryTool import QueryTool
 from ITER_RETGEN import ITER_RETGEN
 
@@ -52,7 +52,7 @@ def generateID(name: str,
     reranker = reranker.split("/")[-1] # in case there is no '/' like cohere reranker
     return f"{timestamp}_{llm}_{embedding}_{reranker}_{prompt}_retriever{retriever_top_k}_rerank{rerank_top_n}/{name}_{llm}_{embedding}_{reranker}_{prompt}_{timestamp}"
 
-def create_query_engines(llm: str = "gpt-40-mini",
+def create_query_engines(llm: str = "gpt-4o-mini",
                          llm_type: str = "OpenAI",
                          embedding_name: str ="text-embedding-3-small",
                          embedding_type: str = "OpenAI",
@@ -419,9 +419,12 @@ def create_query_engines(llm: str = "gpt-40-mini",
     """
     name_id = "agent"
     if name_id in use_query_engines:
-        query_engine = ModifiedQueryEngine(retriever=base_retriever, response_synthesizer=basic_response_synthesizer)
-        query_tool = QueryTool(query_engine=query_engine)
-        agent = Agent(tools=[query_tool])
+        query_engine = ModifiedQueryEngine(retriever=basic_retriever, response_synthesizer=basic_response_synthesizer, reranker=reranker)
+        agent = LlamaAgent(query_engine=query_engine)
+        with open("PromptTemplates/react_agent_prompt.txt", "r") as file:
+            new_system_prompt = file.read()
+        new_prompt = PromptTemplate(new_system_prompt)
+        agent.agent.update_prompts({"agent_worker:system_prompt": new_prompt})
         retriever_id = generateID(name_id, llm_id, embedding_id, rerank_model, timestamp, prompt_id, retriever_top_k, rerank_top_n)
         query_engines[retriever_id] = agent
 

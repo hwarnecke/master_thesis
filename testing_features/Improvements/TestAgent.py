@@ -31,7 +31,7 @@ def main():
         storage_context=storage_context,
         show_progress=False)
 
-    llm = Ollama(model="gritlm")
+    llm = Ollama(model="mistral_7b", request_timeout=900)
     Settings.llm = llm
     query_engine = index.as_query_engine()
     retriever = index.as_retriever()
@@ -43,7 +43,7 @@ def main():
         return modified_qe.query(query)
     dienstleistungen_tool = FunctionTool.from_defaults(fn=dienstleistungen)
 
-    query = "Wie lautet die Adresse des Bürgeramts in Osnabrück?"
+    query = "Ich muss einen neuen Personalausweis, Reisepass und Ersatzführerschein beantragen. Wie teuer ist das jeweils?"
     description = "Beantwortet Fragen zu Dienstleistungen und Adressen rund um die Stadt Osnabrück."
     tool = QueryEngineTool.from_defaults(
         query_engine=query_engine, name="Dienstleistungen", description=description
@@ -51,10 +51,10 @@ def main():
     react_agent = ReActAgent.from_tools(llm=llm, tools=[dienstleistungen_tool], verbose=True)
 
     # update prompts
-    with open("PromptTemplates/react_agent_prompt.txt", "r") as file:
-        new_system_prompt = file.read()
-    new_prompt = PromptTemplate(new_system_prompt)
-    react_agent.update_prompts({"agent_worker:system_prompt": new_prompt})
+    # with open("PromptTemplates/react_agent_prompt.txt", "r") as file:
+    #     new_system_prompt = file.read()
+    # new_prompt = PromptTemplate(new_system_prompt)
+    # react_agent.update_prompts({"agent_worker:system_prompt": new_prompt})
 
     # prompt_dict = react_agent.get_prompts()
     # for k, v in prompt_dict.items():
@@ -63,13 +63,15 @@ def main():
     print(answer)
     nodes = modified_qe.get_agent_nodes()
     len_nodes = len(nodes)
-    if len_nodes:
-        print(nodes[0].get_source_nodes())
+    print(len_nodes)
+    print(nodes)
 
-    query = "Wie lautet die Adresse der Stadtbibliothek?"
-    answer = react_agent.chat(query)
-    print(answer)
-    print(len(nodes))
+    # query = "Wie lautet die Adresse der Stadtbibliothek?"
+    # answer = react_agent.chat(query)
+    # nodes2 = modified_qe.get_agent_nodes()
+    # print(answer)
+    # print(nodes2)
+
 
 
 def low_level():
@@ -89,7 +91,7 @@ def low_level():
         storage_context=storage_context,
         show_progress=False)
 
-    llm = Ollama(model="gritlm")
+    llm = Ollama(model="mistral_7b")
     retriever = index.as_retriever()
     synth = get_response_synthesizer(llm=llm)
     modified_qe = ModifiedQueryEngine(retriever=retriever, response_synthesizer=synth)

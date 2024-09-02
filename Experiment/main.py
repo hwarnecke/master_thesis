@@ -139,9 +139,14 @@ def run_experiment(questions: str = "questions.json",
             # cohere API key is limited to 10 calls per minute, so I need to add a delay here if I use it
             if rerank_model == "rerank-multilingual-v3.0":
                 time.sleep(7)
-            response = qe.query(query)
 
-            nodes: dict[str, str] = create_context_log(response)
+            response = qe.query(query)  # the actual query call
+
+            if "agent" in qe_id:
+                agent_nodes = qe.get_nodes()
+                nodes: dict[str, str] = create_agent_log(agent_nodes)
+            else:
+                nodes: dict[str, str] = create_context_log(response)
 
             correct_answer = question["answer"]
 
@@ -157,7 +162,7 @@ def run_experiment(questions: str = "questions.json",
             # collect additional data if necessary and log them in a separate file
             base_name, extension = os.path.splitext(path)
             add_path: str = f"{base_name}_additional_data{extension}"
-            add_data: dict[str, any] = create_additional_log(qe_id=qe_id, qe=qe, response=response)
+            add_data: dict[str, any] = create_additional_log(qe_id=qe_id, qe=qe)
             if add_data:
                 data_logger.write_csv(add_data, add_path)
 
@@ -186,17 +191,13 @@ def run_experiment(questions: str = "questions.json",
             data_logger.write_csv(data)
 
 
-def create_additional_log(qe_id: str, qe, response) -> dict[str, any]:
-    if "auto" in qe_id:
-        add_data: dict = qe.verbose_output
-    elif "fusion" in qe_id:
+def create_additional_log(qe_id: str, qe) -> dict[str, any]:
+    if "fusion" in qe_id:
         add_data: dict = qe.retriever.generated_questions
     elif "hyde" in qe_id:
         add_data: dict = qe.hyde_object
     elif "agent" in qe_id:
-        add_data: dict = {"query": response["query"]}
-        add_data["thought_process"] = response["thought_process"]
-        add_data.update(response["retriever_log"])
+        add_data: dict = qe.verbose_output
     else:
         add_data = {}
 
@@ -298,63 +299,62 @@ def evaluate_response(metrics: list, input: str, actual_output: str, retrieval_c
     return evaluation
 
 
-def create_context_log(response) -> dict[str, any]:
+def create_context_log(response, identifier: str = "") -> dict[str, any]:
     """
     create a log item for the context information.
-    the agent returns a dictionary instead of a response object which contains a list with all response objects.
     :param response:
     :return:
-    """
-    if isinstance(response, dict):
-        response_objects = response["response_objects"]
-        i: int = 0
-        # log how many calls there were
-        source_nodes = {"Number of Calls": len(response_objects)}
-        # create a log for each response object
-        for response in response_objects:
-            i += 1
-            identifier: str = f"Call {i} "
-            source_nodes.update(extract_source_nodes(response, identifier=identifier))
-            # additionally log the actual answer of that response object
-            answer: dict[str, str] = {f"Call {i} response": str(response)}
-            source_nodes.update(answer)
-    else:
-        source_nodes = extract_source_nodes(response)
-
-    return source_nodes
-
-
-def extract_source_nodes(response, identifier: str = "") -> dict[str, str]:
-    """
-    :param response: LlamaIndex Response Object
-    :param identifier: in case of the agent, I might want to add from which call it is
-    :return: the nodes as dict for data logging
     """
     n: int = 0
     source_nodes = {}
     all_nodes = response.source_nodes
     for node in all_nodes:
         n += 1
-        number = f"{identifier}Node {n}"
-        # extract the ID
-        id_key = number + " ID"
-        id_value = node.id_
-        # the content
-        content_key = number + " content"
-        content_value = node.get_text()
-        # the score
-        score_key = number + " score"
-        score_value = node.get_score()
-        # and the name of the service the node came from
-        metadata_key = number + " Metadata: Name"
-        metadata_content = node.metadata["Name"]
+        source_nodes.update(extract_from_node(node, n, identifier=identifier))
 
-        node_dict = {id_key: id_value,
-                     content_key: content_value,
-                     metadata_key: metadata_content,
-                     score_key: score_value}
-        source_nodes.update(node_dict)
     return source_nodes
+
+
+def create_agent_log(agent_nodes: list) -> dict[str, str]:
+    i: int = 0
+    # log how many calls there were
+    source_nodes = {"Number of Calls": len(agent_nodes)}
+    for response_object in agent_nodes:
+        i += 1
+        identifier: str = f"Call {i} "
+        source_nodes.update(create_context_log(response_object, identifier))
+
+    return source_nodes
+
+def extract_from_node(node, index, identifier: str = "") -> dict[str, str]:
+    """
+    :param node: LlamaIndex Node Object
+    :param index: the index of the node
+    :param identifier: in case of the agent, I might want to add from which call it is
+    :return: the nodes as dict for data logging
+    """
+    number = f"{identifier}Node {index}"
+    # extract the ID
+    id_key = number + " ID"
+    id_value = node.id_
+    # the content
+    content_key = number + " content"
+    content_value = node.get_text()
+    # the score
+    score_key = number + " score"
+    score_value = node.get_score()
+    # and the name of the service the node came from
+    metadata_key = number + " Metadata: Name"
+    metadata_content = node.metadata["Name"]
+
+    node_dict = {id_key: id_value,
+                 content_key: content_value,
+                 metadata_key: metadata_content,
+                 score_key: score_value}
+
+    return node_dict
+
+
 
 
 def compare_embeddings():
@@ -419,6 +419,22 @@ def reranker():
                        retrieval_top_k=20,
                        rerank_top_n=3)
 
+def run_single(qe: str):
+    custom_qa_path = "PromptTemplates/german_qa_template.txt"
+    custom_refine_path = "PromptTemplates/german_refine_template.txt"
+    run_experiment(custom_qa_path=custom_qa_path,
+                   custom_refine_path=custom_refine_path,
+                   evaluate=False,
+                   llm_type="Ollama",
+                   llm="mistral_7b",
+                   embedding="intfloat/multilingual-e5-large-instruct",
+                   embedding_type="HuggingFace",
+                   rerank_model="rerank-multilingual-v3.0",
+                   rerank_type="Cohere",
+                   use_query_engines=[qe],
+                   response_mode="no_text",
+                   retrieval_top_k=20,
+                   rerank_top_n=3)
 
 if __name__ == "__main__":
-    compare_embeddings()
+    run_single("agent")

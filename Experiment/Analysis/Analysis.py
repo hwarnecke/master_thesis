@@ -139,13 +139,13 @@ def compare_embeddings(rerank_n: int = 3, use_all: bool = True):
     order = [
         "OpenAI",
         "Cohere",
-        "GritLM-7B",
-        "German_Semantic",
-        "cross-en-de",
-        "jina-embeddings",
-        "multilingual-e5",
-        "gte-multilingual",
-        "stella_en"
+        "GritLM",
+        "Ger_Sem",
+        "cross-de",
+        "jina",
+        "e5",
+        "gte",
+        "stella"
     ]
 
     ratios_name = []
