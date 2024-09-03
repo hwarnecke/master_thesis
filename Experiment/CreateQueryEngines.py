@@ -22,7 +22,6 @@ from CombinedRetriever import CombinedRetriever
 from FusionRetriever import FusionRetriever
 from ModifiedQueryEngine import ModifiedQueryEngine
 from LlamaAgent import LlamaAgent
-from QueryTool import QueryTool
 from ITER_RETGEN import ITER_RETGEN
 
 
@@ -172,18 +171,28 @@ def create_query_engines(llm: str = "gpt-4o-mini",
         show_progress=False)
 
     basic_response_synthesizer = get_response_synthesizer(response_mode=response_mode)
+    iterative_response_synthesizer = get_response_synthesizer(response_mode="refine")
 
     prompt_id = "retrieval_only"
-    if response_mode == "refine" and custom_qa_prompt and custom_refine_prompt:
+    if custom_qa_prompt and custom_refine_prompt:
         custom_qa_template = PromptTemplate(custom_qa_prompt)
         custom_refine_template = PromptTemplate(custom_refine_prompt)
-        prompt_id = "german_prompt"
-        basic_response_synthesizer.update_prompts(
-            {
-                "qa_template": custom_qa_template,
-                "refine_template": custom_refine_template,
-            }
+        # the synth for the two iterative approaches always need to create an answer otherwise they won't work.
+        iterative_response_synthesizer.update_prompts(
+                {
+                    "qa_template": custom_qa_template,
+                    "refine_template": custom_refine_template,
+                }
         )
+
+        if response_mode == "refine":
+            prompt_id = "german_prompt"
+            basic_response_synthesizer.update_prompts(
+                {
+                    "qa_template": custom_qa_template,
+                    "refine_template": custom_refine_template,
+                }
+            )
 
     basic_retriever = index.as_retriever(similarity_top_k=retriever_top_k)
 
@@ -419,7 +428,11 @@ def create_query_engines(llm: str = "gpt-4o-mini",
     """
     name_id = "agent"
     if name_id in use_query_engines:
-        query_engine = ModifiedQueryEngine(retriever=basic_retriever, response_synthesizer=basic_response_synthesizer, reranker=reranker)
+
+
+        query_engine = ModifiedQueryEngine(retriever=basic_retriever,
+                                           response_synthesizer=iterative_response_synthesizer,
+                                           reranker=reranker)
         agent = LlamaAgent(query_engine=query_engine)
         with open("PromptTemplates/react_agent_prompt.txt", "r") as file:
             new_system_prompt = file.read()
@@ -433,7 +446,7 @@ def create_query_engines(llm: str = "gpt-4o-mini",
     """
     name_id = "iter-retgen"
     if name_id in use_query_engines:
-        iter_retgen = ITER_RETGEN(retriever=basic_retriever, generator=basic_response_synthesizer, reranker=reranker)
+        iter_retgen = ITER_RETGEN(retriever=basic_retriever, generator=iterative_response_synthesizer, reranker=reranker)
         retriever_id = generateID(name_id, llm_id, embedding_id, rerank_model, timestamp, prompt_id, retriever_top_k, rerank_top_n)
         query_engines[retriever_id] = iter_retgen
 

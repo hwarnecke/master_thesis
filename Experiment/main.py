@@ -19,7 +19,7 @@ and save them to disk.
 """
 
 
-def run_experiment(questions: str = "questions.json",
+def run_experiment(questions: str = "questions_extended.json",
                    custom_qa_path: str = None,
                    custom_refine_path: str = None,
                    embedding: str = "text-embedding-3-small",
@@ -137,6 +137,7 @@ def run_experiment(questions: str = "questions.json",
             query = question["question"]
 
             # cohere API key is limited to 10 calls per minute, so I need to add a delay here if I use it
+            # which also means the time comparisons are off for cohere, but I guess I can just subtract that later
             if rerank_model == "rerank-multilingual-v3.0":
                 time.sleep(7)
 
@@ -144,7 +145,7 @@ def run_experiment(questions: str = "questions.json",
 
             if "agent" in qe_id:
                 agent_nodes = qe.get_nodes()
-                nodes: dict[str, str] = create_agent_log(agent_nodes)
+                nodes: dict[str, str] = create_agent_log(agent_nodes, ret_top_k=rerank_top_n)
             else:
                 nodes: dict[str, str] = create_context_log(response)
 
@@ -299,7 +300,7 @@ def evaluate_response(metrics: list, input: str, actual_output: str, retrieval_c
     return evaluation
 
 
-def create_context_log(response, identifier: str = "") -> dict[str, any]:
+def create_context_log(response, identifier: str = "", ret_top_k: int = 3) -> dict[str, any]:
     """
     create a log item for the context information.
     :param response:
@@ -307,22 +308,47 @@ def create_context_log(response, identifier: str = "") -> dict[str, any]:
     """
     n: int = 0
     source_nodes = {}
-    all_nodes = response.source_nodes
+    if response is None:
+        all_nodes = [None] * ret_top_k
+    else:
+        all_nodes = response.source_nodes
+
     for node in all_nodes:
         n += 1
         source_nodes.update(extract_from_node(node, n, identifier=identifier))
 
+
+
     return source_nodes
 
 
-def create_agent_log(agent_nodes: list) -> dict[str, str]:
+def create_agent_log(agent_nodes: list, ret_top_k: int = 3) -> dict[str, str]:
+    """
+    The Agent needs a few extra steps for data logging.
+    It has a list of all response objects that were created in one run (one for each call to the query engine).
+    But since the length of that list can vary, we need to pad the rest with placeholder values,
+    otherwise the csv is off
+    :param agent_nodes:
+    :param ret_top_k:
+    :return:
+    """
     i: int = 0
     # log how many calls there were
-    source_nodes = {"Number of Calls": len(agent_nodes)}
+    number_of_nodes = len(agent_nodes)
+    source_nodes = {"Number of Calls": number_of_nodes}
     for response_object in agent_nodes:
         i += 1
         identifier: str = f"Call {i} "
         source_nodes.update(create_context_log(response_object, identifier))
+
+    max_calls: int = 10     # depends on agent
+    for i in range(max_calls):
+        identifier: str = f"Call {i + 1} "
+        if i < number_of_nodes:
+            response_object = agent_nodes[i]
+        else:
+            response_object = None
+        source_nodes.update(create_context_log(response_object, identifier, ret_top_k))
 
     return source_nodes
 
@@ -334,18 +360,27 @@ def extract_from_node(node, index, identifier: str = "") -> dict[str, str]:
     :return: the nodes as dict for data logging
     """
     number = f"{identifier}Node {index}"
-    # extract the ID
+
+    # create keys
     id_key = number + " ID"
-    id_value = node.id_
-    # the content
     content_key = number + " content"
-    content_value = node.get_text()
-    # the score
     score_key = number + " score"
-    score_value = node.get_score()
-    # and the name of the service the node came from
     metadata_key = number + " Metadata: Name"
-    metadata_content = node.metadata["Name"]
+
+    # extract value or create placeholder
+    # the placeholder is needed to ensure that the log for the agent has a consistent length
+    # even if the amount of calls varies
+    if node is None:
+        placeholder: str = "_"
+        id_value = placeholder
+        content_value = placeholder
+        score_value = placeholder
+        metadata_content = placeholder
+    else:
+        id_value = node.id_
+        content_value = node.get_text()
+        score_value = node.get_score()
+        metadata_content = node.metadata["Name"]
 
     node_dict = {id_key: id_value,
                  content_key: content_value,
@@ -427,8 +462,8 @@ def run_single(qe: str):
                    evaluate=False,
                    llm_type="Ollama",
                    llm="mistral_7b",
-                   embedding="intfloat/multilingual-e5-large-instruct",
-                   embedding_type="HuggingFace",
+                   embedding="embed-multilingual-v3.0",
+                   embedding_type="Cohere",
                    rerank_model="rerank-multilingual-v3.0",
                    rerank_type="Cohere",
                    use_query_engines=[qe],

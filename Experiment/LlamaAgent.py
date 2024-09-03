@@ -46,8 +46,8 @@ class LlamaAgent:
         self.chat_time = time.time() - start_time
         # reset output
         sys.stdout = old_stdout
-        # FIXME: we need the content of this, not the IO Object
-        self.verbose_output = {"Thought Process": verbose_output}
+        verbose_content: str = verbose_output.getvalue()
+        self.verbose_output = {"Thought Process": verbose_content}
 
         return answer
 
