@@ -1,6 +1,8 @@
 import os
 from dotenv import load_dotenv
 import datetime
+import sys
+import io
 from llama_index.core import Settings, get_response_synthesizer, VectorStoreIndex, StorageContext
 from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.llms.openai import OpenAI
@@ -17,6 +19,8 @@ from llama_index.postprocessor.cohere_rerank import CohereRerank
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.embeddings.cohere import CohereEmbedding
 from llama_index.llms.cohere import Cohere
+from llama_index.postprocessor.colbert_rerank import ColbertRerank
+from llama_index.postprocessor.jinaai_rerank import JinaRerank
 
 from CombinedRetriever import CombinedRetriever
 from FusionRetriever import FusionRetriever
@@ -50,6 +54,81 @@ def generateID(name: str,
     """
     reranker = reranker.split("/")[-1] # in case there is no '/' like cohere reranker
     return f"{timestamp}_{llm}_{embedding}_{reranker}_{prompt}_retriever{retriever_top_k}_rerank{rerank_top_n}/{name}_{llm}_{embedding}_{reranker}_{prompt}_{timestamp}"
+
+
+def get_LLM(type: str, llm: str) -> None:
+    match type:
+        case 'OpenAI':
+            openAI_api_key = os.getenv("OPENAI_API_KEY")
+            Settings.llm = OpenAI(model=llm, api_key=openAI_api_key)
+        case 'Cohere':
+            cohere_api_key = os.getenv("COHERE_API_KEY")
+            Settings.llm = Cohere(api_key=cohere_api_key, model=llm)
+        case 'Ollama':
+            Settings.llm = Ollama(model=llm, request_timeout=900)
+        case _:
+            raise ValueError(f"Unsupported llm type: {type}")
+
+def get_Embedding(type: str, embedding_name: str):
+    match type:
+        case 'OpenAI':
+            openAI_api_key = os.getenv("OPENAI_API_KEY")
+            embedding_model = OpenAIEmbedding(model_name=embedding_name, api_key=openAI_api_key)
+            embedding_id = embedding_name.split("-")[0]
+        case 'Cohere':
+            cohere_api_key = os.getenv("COHERE_API_KEY")
+            embedding_model = CohereEmbedding(api_key=cohere_api_key, model_name=embedding_name)
+            embedding_id = embedding_name.split("-")[0]
+        case 'HuggingFace':
+            text_instructions: str = "Repräsentiere das Dokument für eine Suche."
+            query_instructions: str = "Finde relevante Dokumente, die die folgende Frage beantworten."
+            # there have been OOM issues for some models, when running on cuda and I don't want to list
+            # individual models, so I'll just run them all on cpu.
+            # also, I wasn't sure what happens if I supply instructions to non instruct models, so I split it here
+            if "instruct" in embedding_name:
+                embedding_model = HuggingFaceEmbedding(model_name=embedding_name,
+                                                       device='cpu',
+                                                       query_instruction=query_instructions,
+                                                       text_instruction=text_instructions,
+                                                       trust_remote_code=True)
+            else:
+                embedding_model = HuggingFaceEmbedding(model_name=embedding_name, device='cpu', trust_remote_code=True)
+            # HuggingFace models always come with the author like 'author/model-name', so I need to remove the author.
+            # additionally, they can use both '-' and '_' to seperate words in the model_name, so if I want to split it,
+            # I need to filter for both
+            embedding_name = embedding_name.split("/")[1]
+            embedding_id = embedding_name.split("-")[0].split("_")[0]
+        case 'Ollama':
+            # you have to set up the model before you can run this
+            embedding_model = OllamaEmbedding(
+                model_name=embedding_name
+            )
+            embedding_id = embedding_name
+        case _:
+            raise ValueError(f"Unsupported embedding type: {type}")
+
+    return embedding_model, embedding_id
+
+def get_Reranker(type: str, rerank_model: str, rerank_top_n: int):
+    match type:
+        case 'sentenceTransformer':
+            # some models require trust_remote_code but STR does not have a parameter for this
+            # instead it askes per user input for permission but if I miss it, it fails.
+            # this should automatically give permission
+            with as_stdin(io.StringIO('y\ny')):
+                reranker = SentenceTransformerRerank(top_n=rerank_top_n, model=rerank_model, device="cpu")
+        case 'cohere':
+            cohere_api_key = os.getenv("COHERE_API_KEY")
+            reranker = CohereRerank(api_key=cohere_api_key, top_n=rerank_top_n, model=rerank_model)
+        case 'colbert':
+            reranker = ColbertRerank(top_n=rerank_top_n, model=rerank_model, keep_retrieval_score=True)
+        case 'jina':
+            jina_api_key = os.getenv("JINAAI_API_KEY")
+            reranker = JinaRerank(api_key=jina_api_key, top_n=rerank_top_n, model=rerank_model)
+        case _:
+            raise ValueError(f"Unsupported rerank type: {type}")
+
+    return reranker
 
 def create_query_engines(llm: str = "gpt-4o-mini",
                          llm_type: str = "OpenAI",
@@ -92,56 +171,10 @@ def create_query_engines(llm: str = "gpt-4o-mini",
     load_dotenv()
 
     print(f"LLM: {llm_type} {llm}.")
-    match llm_type:
-        case 'OpenAI':
-            openAI_api_key = os.getenv("OPENAI_API_KEY")
-            Settings.llm = OpenAI(model=llm, api_key=openAI_api_key)
-        case 'Cohere':
-            cohere_api_key = os.getenv("COHERE_API_KEY")
-            Settings.llm = Cohere(api_key=cohere_api_key, model=llm)
-        case 'Ollama':
-            Settings.llm = Ollama(model=llm, request_timeout=900)
-        case _:
-            raise ValueError(f"Unsupported llm type: {llm_type}")
+    get_LLM(llm_type, llm)
 
     print(f"Embedding: {embedding_type} {embedding_name}")
-    match embedding_type:
-        case 'OpenAI':
-            openAI_api_key = os.getenv("OPENAI_API_KEY")
-            embedding_model = OpenAIEmbedding(model_name=embedding_name, api_key=openAI_api_key)
-            embedding_id = embedding_name.split("-")[0]
-        case 'Cohere':
-            cohere_api_key = os.getenv("COHERE_API_KEY")
-            embedding_model = CohereEmbedding(api_key=cohere_api_key, model_name=embedding_name)
-            embedding_id = embedding_name.split("-")[0]
-        case 'HuggingFace':
-            text_instructions: str = "Repräsentiere das Dokument für eine Suche."
-            query_instructions: str = "Finde relevante Dokumente, die die folgende Frage beantworten."
-            # there have been OOM issues for some models, when running on cuda and I don't want to list
-            # individual models, so I'll just run them all on cpu.
-            # also, I wasn't sure what happens if I supply instructions to non instruct models, so I split it here
-            if "instruct" in embedding_name:
-                embedding_model = HuggingFaceEmbedding(model_name=embedding_name,
-                                                       device='cpu',
-                                                       query_instruction=query_instructions,
-                                                       text_instruction=text_instructions,
-                                                       trust_remote_code=True)
-            else:
-                embedding_model = HuggingFaceEmbedding(model_name=embedding_name, device='cpu', trust_remote_code=True)
-            # HuggingFace models always come with the author like 'author/model-name', so I need to remove the author.
-            # additionally, they can use both '-' and '_' to seperate words in the model_name, so if I want to split it,
-            # I need to filter for both
-            embedding_name = embedding_name.split("/")[1]
-            embedding_id = embedding_name.split("-")[0].split("_")[0]
-
-        case 'Ollama':
-            # you have to set up the model before you can run this
-            embedding_model = OllamaEmbedding(
-                model_name=embedding_name
-            )
-            embedding_id = embedding_name
-        case _:
-            raise ValueError(f"Unsupported embedding type: {embedding_type}")
+    embedding_model, embedding_id = get_Embedding(embedding_type, embedding_name)
 
     Settings.embed_model = embedding_model
     vector_store_name = "service_" + embedding_name.lower()
@@ -156,14 +189,7 @@ def create_query_engines(llm: str = "gpt-4o-mini",
 
     reranker = None
     print(f"Reranker: {rerank_type} {rerank_model}")
-    match rerank_type:
-        case 'SentenceTransformer':
-            reranker = SentenceTransformerRerank(top_n=rerank_top_n, model=rerank_model)
-        case 'Cohere':
-            cohere_api_key = os.getenv("COHERE_API_KEY")
-            reranker = CohereRerank(api_key=cohere_api_key, top_n=rerank_top_n, model=rerank_model)
-        case _:
-            raise ValueError(f"Unsupported rerank type: {rerank_type}")
+    reranker = get_Reranker(rerank_type, rerank_model, rerank_top_n)
 
     index = VectorStoreIndex.from_vector_store(
         vector_store=es_vector_store,
@@ -451,3 +477,13 @@ def create_query_engines(llm: str = "gpt-4o-mini",
         query_engines[retriever_id] = iter_retgen
 
     return query_engines
+
+
+class as_stdin:
+    def __init__(self, buffer):
+        self.buffer = buffer
+        self.original_stdin = sys.stdin
+    def __enter__(self):
+        sys.stdin = self.buffer
+    def __exit__(self, *exc):
+        sys.stdin = self.original_stdin

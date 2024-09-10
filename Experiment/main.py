@@ -441,14 +441,25 @@ def main_experiment():
 def reranker():
     custom_qa_path = "PromptTemplates/german_qa_template.txt"
     custom_refine_path = "PromptTemplates/german_refine_template.txt"
-    #rerankers = ["cross-encoder/stsb-distilroberta-base", "cross-encoder/msmarco-MiniLM-L12-en-de-v1", "rerank-multilingual-v3.0"]
-    rerankers = ["rerank-multilingual-v3.0"]
-    for reranker in rerankers:
+
+    reranking_models = {
+        # "BAAI/bge-reranker-v2-m3": "sentenceTransformer",
+        # "BAAI/bge-reranker-v2-gemma": "sentenceTransformer",
+        # "ml6team/cross-encoder-mmarco-german-distilbert-base": "sentenceTransformer",
+        "Alibaba-NLP/gte-multilingual-reranker-base": "sentenceTransformer",
+        "castorini/monot5-base-msmarco": "sentenceTransformer",
+        "cross-encoder/msmarco-MiniLM-L12-en-de-v1": "sentenceTransformer",
+        "deepset/gbert-base-germandpr-reranking": "colbert",
+        "jina-reranker-v2-base-multilingual": "jina",
+        "rerank-multilingual-v3.0": "cohere"
+    }
+
+    for model, type in reranking_models.items():
         run_experiment(custom_qa_path=custom_qa_path,
                        custom_refine_path=custom_refine_path,
                        evaluate=False,
-                       embedding="intfloat/multilingual-e5-large-instruct",
-                       rerank_model=reranker,
+                       rerank_model=model,
+                       rerank_type=type,
                        use_query_engines=["base", "rerank", "hybrid"],
                        response_mode="no_text",
                        retrieval_top_k=20,
@@ -472,4 +483,4 @@ def run_single(qe: str):
                    rerank_top_n=3)
 
 if __name__ == "__main__":
-    run_single("agent")
+    reranker()
