@@ -27,8 +27,8 @@ def run_experiment(questions: str = "questions_extended.json",
                    llm: str = "gpt-4o-mini",
                    llm_type: str = "OpenAI",
                    rerank_top_n: int = 3,
-                   rerank_model: str = "cross-encoder/stsb-distilroberta-base",
-                   rerank_type: str = "SentenceTransformer",
+                   rerank_model: str = "rerank-multilingual-v3.0",
+                   rerank_type: str = "cohere",
                    retrieval_top_k: int = 12,
                    use_query_engines: list[str] = None,
                    evaluate: bool = False,
@@ -424,18 +424,19 @@ def compare_embeddings():
                        embedding_type=type,
                        use_query_engines=qes)
 
+
 def main_experiment():
-    """
-    The openAI embedding was by far the best approach, so I'll use that one for the main experiment.
-    :return:
-    """
+    # excluding iterative approaches for now, since I want to pick one of the below as the qe for them
     custom_qa_path = "PromptTemplates/german_qa_template.txt"
     custom_refine_path = "PromptTemplates/german_refine_template.txt"
     run_experiment(custom_qa_path=custom_qa_path,
                    custom_refine_path=custom_refine_path,
                    evaluate=False,
-                   use_query_engines=["base", "rerank", "fusion", "hyde", "hybrid"],
-                   retrieval_top_k=3)
+                   response_mode="no_text",
+                   #use_query_engines=["base", "rerank", "hybrid"],
+                   use_query_engines=["iter-retgen", "agent"],
+                   retrieval_top_k=20,
+                   rerank_top_n=3)
 
 
 def reranker():
@@ -471,16 +472,10 @@ def run_single(qe: str):
     run_experiment(custom_qa_path=custom_qa_path,
                    custom_refine_path=custom_refine_path,
                    evaluate=False,
-                   llm_type="Ollama",
-                   llm="mistral_7b",
-                   embedding="embed-multilingual-v3.0",
-                   embedding_type="Cohere",
-                   rerank_model="rerank-multilingual-v3.0",
-                   rerank_type="Cohere",
                    use_query_engines=[qe],
                    response_mode="no_text",
                    retrieval_top_k=20,
-                   rerank_top_n=3)
+                   rerank_top_n=20)
 
 if __name__ == "__main__":
-    reranker()
+    main_experiment()

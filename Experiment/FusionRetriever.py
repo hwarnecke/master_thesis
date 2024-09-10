@@ -32,7 +32,7 @@ class FusionRetriever(BaseRetriever):
         #client = OpenAI(api_key=api_key)
         Settings.llm = OpenAI(model=self.llm, api_key=api_key)
 
-        template = "Du bekommst eine Frage gestellt. Formuliere die Frage auf 5 unterschiedliche Weißen um ohne dabei den Inhalt der Frage zu ändern. Beanwtorte nicht die Frage sondern gebe nur die neuen Fragen zuück. Die Frage lautet: \n {question}"
+        template = "Du bekommst eine Frage gestellt. Formuliere die Frage auf 5 unterschiedliche Weisen um, ohne dabei den Inhalt der Frage zu ändern. Beanwtorte nicht die Frage sondern gebe nur die neuen Fragen zuück. Die Frage lautet: \n {question}"
 
         user_input = template.format(question=question)
 

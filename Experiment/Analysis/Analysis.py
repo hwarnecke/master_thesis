@@ -118,7 +118,8 @@ def print_question_comparison(order: list[str], comparisons: list[list[bool]]):
     comparison_data = []
     for i in range(len(order)):
         comparison_data.append([order[i]] + comparisons[i])
-    print(tabulate(comparison_data, headers=header,tablefmt="grid"))
+    print(tabulate(comparison_data, headers=header,tablefmt="pipe", floatfmt=".3f"))
+    print("\n")
 
 
 def compare_best_n(best_n: int, ratios: list[float], comparisons: list[list[bool]], order: list[str]):
@@ -133,8 +134,8 @@ def get_columns(df: pd.DataFrame) -> tuple[list,list]:
     names = []
     ids = []
     for column in column_names:
-        id_regex = "Node [0-9] ID"
-        name_regex = "Node [0-9] Metadata: Name"
+        id_regex = r"(Call (1[0-9]|20|[1-9]) )?Node [0-9] ID"
+        name_regex = "(Call (1[0-9]|20|[1-9]) )?Node [0-9] Metadata: Name"
         id_match = re.match(id_regex,column)
         name_match = re.match(name_regex,column)
         if not id_match is None:
@@ -175,19 +176,20 @@ def compare(files: list, order: list, rerank_n: int = 3, use_all: bool = True):
         mrrs.append(mrr)
 
     data = [
-        ["count name"] + [sum(inner_list) for inner_list in comparisons_name],
-        ["ratio name"] + ratios_name,
+        #["count name"] + [sum(inner_list) for inner_list in comparisons_name],
+        #["ratio name"] + ratios_name,
         ["count id"] + [sum(inner_list) for inner_list in comparisons_id],
         ["ratio id"] + ratios_id,
-        ["MRR"] + mrrs
+        ["MRR"] + mrrs,
+        ["Query Time"] + query_times
     ]
 
-    print(tabulate(data, headers=order,tablefmt="grid"))
+    print(tabulate(data, headers=order,tablefmt="pipe", floatfmt=".3f"))
     print("\n")
-    #compare_best_n(3,ratios_id,comparisons_id,order)
+    compare_best_n(3,ratios_id,comparisons_id,order)
 
 
-def compare_embeddings():
+def compare_embeddings(use_all: bool = True):
     files = [
         "../logs/2024-08-28_14-41-31_gpt-4o-mini_text_stsb-distilroberta-base_retrieval_only_retriever12_rerank3/base_gpt-4o-mini_text_stsb-distilroberta-base_retrieval_only_2024-08-28_14-41-31.csv",
         "../logs/2024-08-28_14-41-01_gpt-4o-mini_embed_stsb-distilroberta-base_retrieval_only_retriever12_rerank3/base_gpt-4o-mini_embed_stsb-distilroberta-base_retrieval_only_2024-08-28_14-41-01.csv",
@@ -210,17 +212,25 @@ def compare_embeddings():
         "gte",
         "stella"
     ]
-    compare(files=files, order=order, use_all=True)
+    compare(files=files, order=order, use_all=use_all)
 
 
-def compare_reranker(use_all):
+def compare_reranker(use_all: bool = True):
     folder = [
         "../logs/2024-09-09_12-16-36_gpt-4o-mini_text_bge-reranker-v2-m3_retrieval_only_retriever20_rerank3",
         "../logs/2024-09-09_12-37-24_gpt-4o-mini_text_bge-reranker-v2-gemma_retrieval_only_retriever20_rerank3",
         "../logs/2024-09-09_13-52-26_gpt-4o-mini_text_cross-encoder-mmarco-german-distilbert-base_retrieval_only_retriever20_rerank3",
-
+        "../logs/2024-09-09_16-06-40_gpt-4o-mini_text_gte-multilingual-reranker-base_retrieval_only_retriever20_rerank3",
+        "../logs/2024-09-09_16-14-16_gpt-4o-mini_text_monot5-base-msmarco_retrieval_only_retriever20_rerank3",
+        "../logs/2024-09-09_16-30-06_gpt-4o-mini_text_msmarco-MiniLM-L12-en-de-v1_retrieval_only_retriever20_rerank3",
+        "../logs/2024-09-09_16-34-46_gpt-4o-mini_text_gbert-base-germandpr-reranking_retrieval_only_retriever20_rerank3",
+        "../logs/2024-09-09_16-39-10_gpt-4o-mini_text_jina-reranker-v2-base-multilingual_retrieval_only_retriever20_rerank3",
+        "../logs/2024-09-09_16-41-12_gpt-4o-mini_text_rerank-multilingual-v3.0_retrieval_only_retriever20_rerank3"
     ]
+
     order = [
+        "control_3",
+        "control_20",
         "bge-m3",
         "bge-gemma",
         "distilbert",
@@ -234,13 +244,38 @@ def compare_reranker(use_all):
 
     sorting = ["base", "rerank", "hybrid"]
     rerank_files = []
+
+    # get baseline
+    baseline_3 = "../logs/2024-09-09_16-41-12_gpt-4o-mini_text_rerank-multilingual-v3.0_retrieval_only_retriever20_rerank3/base_gpt-4o-mini_text_rerank-multilingual-v3.0_retrieval_only_2024-09-09_16-41-12.csv"
+    baseline_20 = "../logs/2024-09-10_10-51-26_gpt-4o-mini_text_rerank-multilingual-v3.0_retrieval_only_retriever20_rerank20/base_gpt-4o-mini_text_rerank-multilingual-v3.0_retrieval_only_2024-09-10_10-51-26.csv"
+    rerank_files.append(baseline_3)
+    rerank_files.append(baseline_20)
+
     for directory in folder:
         filenames = get_filtered_and_sorted_filenames(directory,sorting)
         rerank_files.append(filenames[1])   # currently we only need the reranking data
 
-    compare(files=rerank_files, order=order, use_all=False)
+    compare(files=rerank_files, order=order, use_all=use_all)
 
 
+def compare_approaches(location: str, order: list[str] = None, use_all: bool = True):
+    if order is None:
+        order = [
+            "base",
+            "rerank",
+            "hybrid",
+            "hyde",
+            "fusion"
+        ]
+
+    filenames = get_filtered_and_sorted_filenames(location, order)
+    compare(filenames, order, use_all)
 
 if __name__ == "__main__":
     compare_embeddings()
+    compare_reranker()
+    compare_approaches(location="../logs/2024-09-10_12-10-06_gpt-4o-mini_text_rerank-multilingual-v3.0_retrieval_only_retriever20_rerank3")
+    compare_approaches(location="../logs/2024-09-10_13-00-27_gpt-4o-mini_text_rerank-multilingual-v3.0_retrieval_only_retriever20_rerank3",
+                       order=["base", "rerank", "hybrid"])
+    compare_approaches(location="../logs/2024-09-10_13-57-57_gpt-4o-mini_text_rerank-multilingual-v3.0_retrieval_only_retriever20_rerank3",
+                       order=["agent", "iter-retgen"])

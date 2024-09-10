@@ -1,4 +1,5 @@
 import io
+import re
 
 import pexpect
 import sys
@@ -39,5 +40,14 @@ def wild():
     with as_stdin(io.StringIO("HEYOO")):
         echo()
 
+def regex():
+    id_regex = r"(Call (1[0-9]|20|[1-9]) )?Node [0-9] ID"
+    test = "Call 1 Node 1 ID"
+    test2 = "Node 4 ID"
+    match = re.match(id_regex,test)
+    match2 = re.match(id_regex,test2)
+    print(match)
+    print(match2)
+
 if __name__ == "__main__":
-    redirect()
+    regex()
