@@ -3,12 +3,14 @@ from typing import Dict
 
 from CreateQueryEngines import create_query_engines
 from DataLogging import DataLogging
-import json, tiktoken, os
+import json, os
 from llama_index.core.callbacks import CallbackManager, TokenCountingHandler
 from llama_index.core import Settings
 from deepeval.test_case import LLMTestCase
 from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric, ContextualRelevancyMetric
-from Agent import Response
+from DeepEvalCustomLLM import DeepEvalCustomLLM
+from dotenv import load_dotenv
+from llama_index.llms.cohere import Cohere
 
 """
 This is  the main file to run the experiment.
@@ -225,12 +227,17 @@ def collect_tokens(token_counter) -> dict:
 def create_metrics() -> list:
     """
     create a set of deepeval metrics for the evaluation.
-    They use gpt-4o as standard evaluation model
     :return:
     """
-    answer_relevancy_metric = AnswerRelevancyMetric()
-    faithfulness_metric = FaithfulnessMetric()
-    contextual_relevancy_metric = ContextualRelevancyMetric()
+    # set Command-R+ as eval model, maybe test a different one later on
+    load_dotenv()
+    cohere_api_key = os.getenv("COHERE_API_KEY")
+    llm = Cohere(api_key=cohere_api_key, model="command-r-plus")
+    custom_llm = DeepEvalCustomLLM(llm=llm)
+
+    answer_relevancy_metric = AnswerRelevancyMetric(model=custom_llm)
+    faithfulness_metric = FaithfulnessMetric(model=custom_llm)
+    contextual_relevancy_metric = ContextualRelevancyMetric(model=custom_llm)
     metrics = [answer_relevancy_metric, faithfulness_metric, contextual_relevancy_metric]
     return metrics
 
@@ -276,17 +283,18 @@ def evaluate_response(metrics: list, input: str, actual_output: str, retrieval_c
         # Since LLMs can sometimes be unpredictable in their outcome this usually fails at some point.
         # I hope that it is fixed by simply giving the LLM a few chances to generate a valid JSON,
         # but the amount of tries are limited in order to avoid an endless loop
-        max_attempts = 6
+        max_attempts = 500
         attempts = 0
         while attempts < max_attempts:
             try:
                 metric.measure(test_case)
                 break
-            except ValueError as e:
+            except Exception as e:
                 attempts += 1
                 if attempts == max_attempts:
                     raise e
-                print("\t\t...invalid JSON, try again...")
+                print("\t\t...Exception occured, try again...")
+                time.sleep(3)
 
         score = metric.score
         reason = metric.reason
@@ -471,11 +479,15 @@ def run_single(qe: str):
     custom_refine_path = "PromptTemplates/german_refine_template.txt"
     run_experiment(custom_qa_path=custom_qa_path,
                    custom_refine_path=custom_refine_path,
-                   evaluate=False,
+                   llm_type="Ollama",
+                   llm = "mixtral",
+                   evaluate=True,
                    use_query_engines=[qe],
-                   response_mode="no_text",
                    retrieval_top_k=20,
-                   rerank_top_n=20)
+                   rerank_top_n=3)
 
 if __name__ == "__main__":
-    main_experiment()
+    start_time = time.time()
+    run_single("rerank")
+    stop_time = time.time() - start_time
+    print(stop_time)
