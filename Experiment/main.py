@@ -143,7 +143,17 @@ def run_experiment(questions: str = "questions_extended.json",
             if rerank_model == "rerank-multilingual-v3.0":
                 time.sleep(7)
 
-            response = qe.query(query)  # the actual query call
+            query_attempt: int = 0
+            max_query_attempts = 10
+            while query_attempt < max_query_attempts:
+                try:
+                    response = qe.query(query)  # the actual query call
+                    break
+                except Exception as e:
+                    query_attempt += 1
+                    print(f"\t\tQuery failed with: {e}")
+                    print("\t\tRetrying in 3 seconds")
+                    time.sleep(3)
 
             if "agent" in qe_id:
                 agent_nodes = qe.get_nodes()
@@ -237,8 +247,8 @@ def create_metrics() -> list:
 
     answer_relevancy_metric = AnswerRelevancyMetric(model=custom_llm)
     faithfulness_metric = FaithfulnessMetric(model=custom_llm)
-    contextual_relevancy_metric = ContextualRelevancyMetric(model=custom_llm)
-    metrics = [answer_relevancy_metric, faithfulness_metric, contextual_relevancy_metric]
+    #contextual_relevancy_metric = ContextualRelevancyMetric(model=custom_llm)
+    metrics = [answer_relevancy_metric, faithfulness_metric]#, contextual_relevancy_metric]
     return metrics
 
 
@@ -293,7 +303,7 @@ def evaluate_response(metrics: list, input: str, actual_output: str, retrieval_c
                 attempts += 1
                 if attempts == max_attempts:
                     raise e
-                print("\t\t...Exception occured, try again...")
+                print(f"\t\t...Exception {e} occured, try again...")
                 time.sleep(3)
 
         score = metric.score
@@ -474,6 +484,46 @@ def reranker():
                        retrieval_top_k=20,
                        rerank_top_n=3)
 
+
+def llms():
+    custom_qa_path = "PromptTemplates/german_qa_template.txt"
+    custom_refine_path = "PromptTemplates/german_refine_template.txt"
+    llms = {
+        # "mistral": "Ollama",
+        # "mixtral": "Ollama",
+        # "command-r-plus": "Cohere",
+        # "gpt-4o-mini": "OpenAI",
+        # "wiedervereinigung_7b": "Ollama",
+        # "sauerkraut_mixtral": "Ollama",
+        # "sauerkraut_llama31_8b": "Ollama",
+        # "llama31": "Ollama",
+        # "sauerkraut_llama31": "Ollama",
+        "llama31_8b": "Ollama",  # have to retry this!
+    }
+
+    failed = []
+    for llm, type in llms.items():
+        start_time = time.time()
+        try:
+            run_experiment(custom_qa_path=custom_qa_path,
+                       custom_refine_path=custom_refine_path,
+                       llm_type=type,
+                       llm = llm,
+                       evaluate=True,
+                       use_query_engines=["rerank"],
+                       retrieval_top_k=20,
+                       rerank_top_n=3)
+        except Exception as e:
+            failed.append(llm)
+            print(f"{llm} failed with {e}, trying next one.")
+            time.sleep(3)
+
+        stop_time = time.time() - start_time
+        print(f"\nRunning this shit show took {stop_time} seconds.\n")
+
+    print(f"{len(failed)} failed llms: {failed}")
+
+
 def run_single(qe: str):
     custom_qa_path = "PromptTemplates/german_qa_template.txt"
     custom_refine_path = "PromptTemplates/german_refine_template.txt"
@@ -488,6 +538,6 @@ def run_single(qe: str):
 
 if __name__ == "__main__":
     start_time = time.time()
-    run_single("rerank")
+    llms()
     stop_time = time.time() - start_time
-    print(stop_time)
+    print(f"\nThis probably took longer than all Frodo scenes in LOTR...: {stop_time}s")

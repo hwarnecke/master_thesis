@@ -65,7 +65,7 @@ def get_LLM(type: str, llm: str) -> None:
             cohere_api_key = os.getenv("COHERE_API_KEY")
             Settings.llm = Cohere(api_key=cohere_api_key, model=llm, temperature=0)
         case 'Ollama':
-            Settings.llm = Ollama(model=llm, request_timeout=900, temperature=0)
+            Settings.llm = Ollama(model=llm, request_timeout=2000, temperature=0)
         case _:
             raise ValueError(f"Unsupported llm type: {type}")
 

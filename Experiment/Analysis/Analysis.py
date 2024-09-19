@@ -1,9 +1,18 @@
+import time
+
 import pandas as pd
 import numpy as np
+from deepeval.metrics import AnswerRelevancyMetric
+from deepeval.test_case import LLMTestCase
+from dotenv import load_dotenv
+from llama_index.llms.cohere import Cohere
 from tabulate import tabulate
 import json
 import os
 import re
+
+from Experiment.DataLogging import DataLogging
+from Experiment.DeepEvalCustomLLM import DeepEvalCustomLLM
 
 
 def get_filtered_and_sorted_filenames(directory, keywords) -> list:
@@ -148,8 +157,8 @@ def get_avg_time(df: pd.DataFrame, type: str = "query") -> list[float]:
     match type:
         case "query":
             return np.mean(df["query_time"])
-        case "completion":
-            return np.mean(df["completion_time"])
+        case "generation":
+            return np.mean(df["generating_time"])
         case "total":
             return np.mean(df["total_time"])
 
@@ -187,6 +196,14 @@ def compare(files: list, order: list, rerank_n: int = 3, use_all: bool = True):
     print(tabulate(data, headers=order,tablefmt="pipe", floatfmt=".3f"))
     print("\n")
     compare_best_n(3,ratios_id,comparisons_id,order)
+
+
+def extract_evaluations(df: pd.DataFrame) -> list:
+    answer_relevancy = df["Answer_Relevancy_metric_score"]
+    faithfulness = df["Faithfulness_metric_success"]
+    contextual_relevancy = df["Contextual_Relevancy_metric_score"]
+    return [answer_relevancy, faithfulness, contextual_relevancy]
+
 
 
 def compare_embeddings(use_all: bool = True):
@@ -271,7 +288,81 @@ def compare_approaches(location: str, order: list[str] = None, use_all: bool = T
     filenames = get_filtered_and_sorted_filenames(location, order)
     compare(filenames, order, use_all)
 
-if __name__ == "__main__":
+def compare_evaluations(files: list, order: list):
+
+    answer_relevancy_scores = []
+    faithfulness_scores = []
+    contextual_relevancy_scores = []
+    generation_times = []
+
+    for file in files:
+        df = pd.read_csv(file, sep=';')
+        scores = extract_evaluations(df)
+        answer_relevancy_scores.append(np.mean(scores[0]))
+        faithfulness_scores.append(np.mean(scores[1]))
+        contextual_relevancy_scores.append(np.mean(scores[2]))
+        generation_times.append(get_avg_time(df, "generation"))
+
+    data = [
+        ["Answer Relevancy"] + answer_relevancy_scores,
+        ["Faithfulness"] + faithfulness_scores,
+        ["Contextual Relevancy"] + contextual_relevancy_scores,
+        ["Generation Time"] + generation_times
+    ]
+
+    print(tabulate(data, headers=order, tablefmt="pipe", floatfmt=".2f"))
+
+
+def evaluate_toni():
+    # load logs
+    toni_path = "../logs/Toni/Toni_2024_09_13.JSON"
+    with open(toni_path, 'r') as file:
+        toni_log = json.load(file)
+
+    # create metric
+    load_dotenv()
+    cohere_api_key = os.getenv("COHERE_API_KEY")
+    llm = Cohere(api_key=cohere_api_key, model="command-r-plus")
+    custom_llm = DeepEvalCustomLLM(llm=llm)
+
+    answer_relevancy_metric = AnswerRelevancyMetric(model=custom_llm)
+
+    path = "../logs/Toni/Toni_Eval"
+    data_logger = DataLogging(file_path=path)
+    n = 0
+    for item in toni_log:
+        n += 1
+        print(f"Evaluating: {n}")
+        test_case = LLMTestCase(
+            input=item["Question"],
+            actual_output=item["Answer"]
+        )
+        max_attempts = 500
+        attempts = 0
+        while attempts < max_attempts:
+            try:
+                answer_relevancy_metric.measure(test_case)
+                break
+            except Exception as e:
+                attempts += 1
+                if attempts == max_attempts:
+                    raise e
+                print(f"\t\t...Exception {e} occured, try again...")
+                time.sleep(3)
+
+        score = answer_relevancy_metric.score
+        reason = answer_relevancy_metric.reason
+        success = answer_relevancy_metric.success
+
+        result = {"answer_relevancy_metric" + "_success": success,
+                  "answer_relevancy_metric" + "_score": score,
+                  "answer_relevancy_metric" + "_reason": reason}
+
+        data_logger.write_csv(result)
+
+
+
+def main():
     compare_embeddings()
     compare_reranker()
     compare_approaches(location="../logs/2024-09-10_12-10-06_gpt-4o-mini_text_rerank-multilingual-v3.0_retrieval_only_retriever20_rerank3")
@@ -279,3 +370,20 @@ if __name__ == "__main__":
                        order=["base", "rerank", "hybrid"])
     compare_approaches(location="../logs/2024-09-10_13-57-57_gpt-4o-mini_text_rerank-multilingual-v3.0_retrieval_only_retriever20_rerank3",
                        order=["agent", "iter-retgen"])
+    compare_evaluations(["../logs/2024-09-12_21-01-39_mistral_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_mistral_text_rerank-multilingual-v3.0_german_prompt_2024-09-12_21-01-39.csv",
+                         "../logs/2024-09-13_09-56-51_mixtral_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_mixtral_text_rerank-multilingual-v3.0_german_prompt_2024-09-13_09-56-51.csv",
+                         "../logs/2024-09-14_00-26-18_command-r-plus_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_command-r-plus_text_rerank-multilingual-v3.0_german_prompt_2024-09-14_00-26-18.csv",
+                         "../logs/2024-09-14_06-53-31_gpt-4o-mini_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_gpt-4o-mini_text_rerank-multilingual-v3.0_german_prompt_2024-09-14_06-53-31.csv",
+                         "../logs/2024-09-14_13-26-02_wiedervereinigung_7b_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_wiedervereinigung_7b_text_rerank-multilingual-v3.0_german_prompt_2024-09-14_13-26-02.csv",
+                         "../logs/2024-09-15_08-03-31_sauerkraut_mixtral_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_sauerkraut_mixtral_text_rerank-multilingual-v3.0_german_prompt_2024-09-15_08-03-31.csv",
+                         ],
+                        ["mistral",
+                         "mixtral",
+                         "Command-R+",
+                         "GPT-4o-mini",
+                         "Wiedervereinigung-7B",
+                         "Sauerkraut_mixtral",
+                         ])
+
+if __name__ == "__main__":
+   main()

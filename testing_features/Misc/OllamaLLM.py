@@ -18,7 +18,7 @@ def main():
 
     start = time.time()
     #llm = Ollama(model="sauerkraut_hero_q6", request_timeout=500.0)
-    llm = "sauerkraut_hero_q6"
+    llm = "sauerkraut_llama31_8b"
     Settings.llm = Ollama(model=llm, request_timeout=500)
     loaded = time.time()
     print(f"model loaded after {loaded - start} seconds.")
@@ -55,7 +55,7 @@ def token_counting():
 
 def check_chat():
     # did that to check if it was a chat with memory, but apparently it is not.
-    llm = Ollama(model="sauerkraut_hero", request_timeout=500.0)
+    llm = Ollama(model="llama31_8b", request_timeout=500.0)
     while True:
         prompt = input()
         answer = llm.complete(prompt)
@@ -63,4 +63,4 @@ def check_chat():
 
 
 if __name__ == "__main__":
-    main()
+    check_chat()
