@@ -1,7 +1,8 @@
 import time
 from typing import Dict
 
-from CreateQueryEngines import create_query_engines
+#from CreateQueryEngines import create_query_engines, get_Reranker
+import CreateQueryEngines
 from DataLogging import DataLogging
 import json, os
 from llama_index.core.callbacks import CallbackManager, TokenCountingHandler
@@ -83,7 +84,7 @@ def run_experiment(questions: str = "questions_extended.json",
     if use_query_engines is None:
         use_query_engines = ["base", "rerank", "hybrid", "auto", "hyde", "fusion", "agent", "iter-retgen"]
 
-    query_engines = create_query_engines(llm=llm,
+    query_engines = CreateQueryEngines.create_query_engines(llm=llm,
                                          llm_type=llm_type,
                                          embedding_name=embedding,
                                          embedding_type=embedding_type,
@@ -148,6 +149,7 @@ def run_experiment(questions: str = "questions_extended.json",
             while query_attempt < max_query_attempts:
                 try:
                     response = qe.query(query)  # the actual query call
+                    print(f"\t\tAnswer: {response}")
                     break
                 except Exception as e:
                     query_attempt += 1
@@ -406,9 +408,6 @@ def extract_from_node(node, index, identifier: str = "") -> dict[str, str]:
                  score_key: score_value}
 
     return node_dict
-
-
-
 
 def compare_embeddings():
     """

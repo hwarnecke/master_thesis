@@ -15,6 +15,20 @@ from Experiment.DataLogging import DataLogging
 from Experiment.DeepEvalCustomLLM import DeepEvalCustomLLM
 
 
+def sort_list_by_order(target_list: list, order_list: list) -> list:
+    # Create a dictionary to map each item in order_list to an empty list
+    order_dict = {item: [] for item in order_list}
+
+    # Iterate over the target_list and append each element to the corresponding list in the dictionary
+    for element in target_list:
+        for item in order_list:
+            if element.startswith(item):
+                order_dict[item].append(element)
+                break
+
+    # Return the values of the dictionary as a list of lists
+    return list(order_dict.values())
+
 def get_filtered_and_sorted_filenames(directory, keywords) -> list:
     # Get all files and directories in the specified directory
     all_entries = os.listdir(directory)
@@ -76,14 +90,16 @@ def compare_nodes(df: pd.DataFrame, control_path: str, columns: list, type: str 
         if use_all:
             comparison.append(all(s in test_keys for s in control_keys))
         else:
-            comparison.append(any(s in test_keys for s in control_keys))
+            #comparison.append(any(s in test_keys for s in control_keys))
+            comparison.append(sum(1 for key in test_keys if key in control_keys) / len(control_keys))
 
         # get reciprocal rank
-        rank = 0
+        # FIXME: adjust for multi hop questions
+        rank = [0]
         for n in range(len(test_keys)):
             if test_keys[n] in control_keys:
-                rank = 1/(n+1)
-        reciprocal_rank.append(rank)
+                rank.append(1/(n+1))
+        reciprocal_rank.append(np.max(rank))
 
 
     # calculate the ratio of true to false
@@ -127,7 +143,7 @@ def print_question_comparison(order: list[str], comparisons: list[list[bool]]):
     comparison_data = []
     for i in range(len(order)):
         comparison_data.append([order[i]] + comparisons[i])
-    print(tabulate(comparison_data, headers=header,tablefmt="pipe", floatfmt=".3f"))
+    print(tabulate(comparison_data, headers=header,tablefmt="latex", floatfmt=".2f"))
     print("\n")
 
 
@@ -142,16 +158,22 @@ def get_columns(df: pd.DataFrame) -> tuple[list,list]:
     column_names = list(df)
     names = []
     ids = []
+    times = []
     for column in column_names:
-        id_regex = r"(Call (1[0-9]|20|[1-9]) )?Node [0-9] ID"
+        # id_regex = r"(Call (1[0-9]|20|[1-9]) )?Node [0-9] ID"
+        id_regex = r".*Node [0-9]* ID"
         name_regex = "(Call (1[0-9]|20|[1-9]) )?Node [0-9] Metadata: Name"
+        time_regex = r".*query_time"
         id_match = re.match(id_regex,column)
         name_match = re.match(name_regex,column)
+        time_match = re.match(time_regex,column)
         if not id_match is None:
             ids.append(column)
         elif not name_match is None:
             names.append(column)
-    return ids, names
+        elif not time_match is None:
+            times.append(column)
+    return ids, names, times
 
 def get_avg_time(df: pd.DataFrame, type: str = "query") -> list[float]:
     match type:
@@ -163,7 +185,7 @@ def get_avg_time(df: pd.DataFrame, type: str = "query") -> list[float]:
             return np.mean(df["total_time"])
 
 
-def compare(files: list, order: list, rerank_n: int = 3, use_all: bool = True):
+def compare(files: list, order: list, size: list = None, use_all: bool = True, style: str = "latex"):
 
     ratios_name = []
     comparisons_name = []
@@ -184,16 +206,31 @@ def compare(files: list, order: list, rerank_n: int = 3, use_all: bool = True):
         comparisons_id.append(comparison_id)
         mrrs.append(mrr)
 
-    data = [
-        #["count name"] + [sum(inner_list) for inner_list in comparisons_name],
-        #["ratio name"] + ratios_name,
-        ["count id"] + [sum(inner_list) for inner_list in comparisons_id],
-        ["ratio id"] + ratios_id,
-        ["MRR"] + mrrs,
-        ["Query Time"] + query_times
-    ]
+    if size:
+        data = [
+            #["count name"] + [sum(inner_list) for inner_list in comparisons_name],
+            #["ratio name"] + ratios_name,
+            ["count id"] + [sum(inner_list) for inner_list in comparisons_id],
+            ["ratio id"] + ratios_id,
+            ["count name"] + [sum(inner_list) for inner_list in comparisons_name],
+            ["ratio name"] + ratios_name,
+            ["MRR"] + mrrs,
+            ["Query Time"] + query_times,
+            ["Size"] + size,
+        ]
+    else:
+        data = [
+            #["count name"] + [sum(inner_list) for inner_list in comparisons_name],
+            #["ratio name"] + ratios_name,
+            ["count id"] + [sum(inner_list) for inner_list in comparisons_id],
+            ["ratio id"] + ratios_id,
+            ["count name"] + [sum(inner_list) for inner_list in comparisons_name],
+            ["ratio name"] + ratios_name,
+            ["MRR"] + mrrs,
+            ["Query Time"] + query_times
+        ]
 
-    print(tabulate(data, headers=order,tablefmt="pipe", floatfmt=".3f"))
+    print(tabulate(data, headers=order,tablefmt="markdown", floatfmt=".2f"))
     print("\n")
     compare_best_n(3,ratios_id,comparisons_id,order)
 
@@ -205,31 +242,90 @@ def extract_evaluations(df: pd.DataFrame) -> list:
     return [answer_relevancy, faithfulness, contextual_relevancy]
 
 
+def reranking_analysis():
+    file = "../logs/rerank_experiment_2024-09-28_22-09-37.csv"
+    df = pd.read_csv(file, sep=";")
+    columns, _, times = get_columns(df)
+    reranking_shorts = [
+        "no_reranking",
+        "MiniLM",
+        "gbert",
+        "cross",
+        "monot5",
+        "bge_gemma",
+        "bge_m3",
+        "gte",
+        "JinaAI",
+        "Cohere"
+    ]
+    all_columns = sort_list_by_order(columns, reranking_shorts)
+    all_time_columns = sort_list_by_order(times, reranking_shorts)
+    control_path = "../questions_extended.json"
+    use_all = True
+    ratios_id = []
+    comparisons_id = []
+    mrrs = []
+    times = []
+    # query_times = []
+    for id_columns in all_columns:
+        ratio_id, comparison_id, mrr = compare_nodes(df=df, control_path=control_path, columns=id_columns, type="id",
+                                                 use_all=use_all)
+        ratios_id.append(ratio_id)
+        comparisons_id.append(comparison_id)
+        mrrs.append(mrr)
+
+    for time_column in all_time_columns:
+        time = np.mean(df[time_column])
+        times.append(time)
+
+
+    data = [
+        ["count id"] + [sum(inner_list) for inner_list in comparisons_id],
+        ["ratio id"] + ratios_id,
+        ["MRR"] + mrrs,
+        ["Time"] + times
+    ]
+    print(tabulate(data, headers=reranking_shorts, tablefmt="latex", floatfmt=".2f"))
+
+
 
 def compare_embeddings(use_all: bool = True):
     files = [
-        "../logs/2024-08-28_14-41-31_gpt-4o-mini_text_stsb-distilroberta-base_retrieval_only_retriever12_rerank3/base_gpt-4o-mini_text_stsb-distilroberta-base_retrieval_only_2024-08-28_14-41-31.csv",
-        "../logs/2024-08-28_14-41-01_gpt-4o-mini_embed_stsb-distilroberta-base_retrieval_only_retriever12_rerank3/base_gpt-4o-mini_embed_stsb-distilroberta-base_retrieval_only_2024-08-28_14-41-01.csv",
-        "../logs/2024-08-28_14-40-48_gpt-4o-mini_gritlm_stsb-distilroberta-base_retrieval_only_retriever12_rerank3/base_gpt-4o-mini_gritlm_stsb-distilroberta-base_retrieval_only_2024-08-28_14-40-48.csv",
         "../logs/2024-08-28_14-28-02_gpt-4o-mini_German_stsb-distilroberta-base_retrieval_only_retriever12_rerank3/base_gpt-4o-mini_German_stsb-distilroberta-base_retrieval_only_2024-08-28_14-28-02.csv",
-        "../logs/2024-08-28_14-28-07_gpt-4o-mini_cross_stsb-distilroberta-base_retrieval_only_retriever12_rerank3/base_gpt-4o-mini_cross_stsb-distilroberta-base_retrieval_only_2024-08-28_14-28-07.csv",
         "../logs/2024-08-28_14-28-11_gpt-4o-mini_jina_stsb-distilroberta-base_retrieval_only_retriever12_rerank3/base_gpt-4o-mini_jina_stsb-distilroberta-base_retrieval_only_2024-08-28_14-28-11.csv",
+        "../logs/2024-08-28_14-28-07_gpt-4o-mini_cross_stsb-distilroberta-base_retrieval_only_retriever12_rerank3/base_gpt-4o-mini_cross_stsb-distilroberta-base_retrieval_only_2024-08-28_14-28-07.csv",
         "../logs/2024-08-28_14-28-13_gpt-4o-mini_multilingual_stsb-distilroberta-base_retrieval_only_retriever12_rerank3/base_gpt-4o-mini_multilingual_stsb-distilroberta-base_retrieval_only_2024-08-28_14-28-13.csv",
         "../logs/2024-08-28_14-28-59_gpt-4o-mini_gte_stsb-distilroberta-base_retrieval_only_retriever12_rerank3/base_gpt-4o-mini_gte_stsb-distilroberta-base_retrieval_only_2024-08-28_14-28-59.csv",
-        "../logs/2024-08-28_14-35-34_gpt-4o-mini_stella_stsb-distilroberta-base_retrieval_only_retriever12_rerank3/base_gpt-4o-mini_stella_stsb-distilroberta-base_retrieval_only_2024-08-28_14-35-34.csv"
+        "../logs/2024-08-28_14-35-34_gpt-4o-mini_stella_stsb-distilroberta-base_retrieval_only_retriever12_rerank3/base_gpt-4o-mini_stella_stsb-distilroberta-base_retrieval_only_2024-08-28_14-35-34.csv",
+        "../logs/2024-08-28_14-40-48_gpt-4o-mini_gritlm_stsb-distilroberta-base_retrieval_only_retriever12_rerank3/base_gpt-4o-mini_gritlm_stsb-distilroberta-base_retrieval_only_2024-08-28_14-40-48.csv",
+        "../logs/2024-08-28_14-41-31_gpt-4o-mini_text_stsb-distilroberta-base_retrieval_only_retriever12_rerank3/base_gpt-4o-mini_text_stsb-distilroberta-base_retrieval_only_2024-08-28_14-41-31.csv",
+        "../logs/2024-08-28_14-41-01_gpt-4o-mini_embed_stsb-distilroberta-base_retrieval_only_retriever12_rerank3/base_gpt-4o-mini_embed_stsb-distilroberta-base_retrieval_only_2024-08-28_14-41-01.csv"
     ]
+
     order = [
-        "OpenAI",
-        "Cohere",
-        "GritLM",
         "Ger_Sem",
-        "cross-de",
         "jina",
+        "cross-de",
         "e5",
-        "gte",
-        "stella"
+        "GTE",
+        "stella",
+        "GritLM",
+        "OpenAI",
+        "Cohere"
     ]
-    compare(files=files, order=order, use_all=use_all)
+
+    size = [
+        28.1,
+        21.8,
+        22,
+        28.1,
+        21.9,
+        40.5,
+        99.8,
+        39.5,
+        18.4
+    ]
+    compare(files=files, order=order, size=size, use_all=use_all, style="latex")
 
 
 def compare_reranker(use_all: bool = True):
@@ -386,4 +482,4 @@ def main():
                          ])
 
 if __name__ == "__main__":
-   main()
+   reranking_analysis()
