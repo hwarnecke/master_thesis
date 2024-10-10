@@ -345,7 +345,7 @@ class ServiceScraper:
         return nodes
 
 
-# if __name__ == "__main__":
-#     scraper = ServiceScraper()
-#     text_nodes = scraper.ScrapeServicePage()
-#     print(text_nodes[0])
+if __name__ == "__main__":
+    scraper = ServiceScraper()
+    text_nodes = scraper.ScrapeServicePage(load_from_disc=True)
+    print(text_nodes[0])

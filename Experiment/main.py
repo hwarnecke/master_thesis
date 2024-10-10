@@ -529,14 +529,15 @@ def run_single(qe: str):
     run_experiment(custom_qa_path=custom_qa_path,
                    custom_refine_path=custom_refine_path,
                    llm_type="Ollama",
-                   llm = "mixtral",
-                   evaluate=True,
+                   llm = "sauerkraut_llama31_8b",
+                   evaluate=False,
+                   response_mode="no_text",
                    use_query_engines=[qe],
                    retrieval_top_k=20,
                    rerank_top_n=3)
 
 if __name__ == "__main__":
     start_time = time.time()
-    llms()
+    run_single("hybrid")
     stop_time = time.time() - start_time
     print(f"\nThis probably took longer than all Frodo scenes in LOTR...: {stop_time}s")

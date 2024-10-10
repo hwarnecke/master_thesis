@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 import datetime
 import sys
+from pathlib import Path
 import io
 from llama_index.core import Settings, get_response_synthesizer, VectorStoreIndex, StorageContext
 from llama_index.embeddings.ollama import OllamaEmbedding
@@ -27,6 +28,9 @@ from FusionRetriever import FusionRetriever
 from ModifiedQueryEngine import ModifiedQueryEngine
 from LlamaAgent import LlamaAgent
 from ITER_RETGEN import ITER_RETGEN
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from data_handling.webcrawl_code.ServiceScraper import ServiceScraper
 
 
 def generateID(name: str,
@@ -94,7 +98,7 @@ def get_Embedding(type: str, embedding_name: str):
             else:
                 embedding_model = HuggingFaceEmbedding(model_name=embedding_name, device='cpu', trust_remote_code=True)
             # HuggingFace models always come with the author like 'author/model-name', so I need to remove the author.
-            # additionally, they can use both '-' and '_' to seperate words in the model_name, so if I want to split it,
+            # additionally, they can use both '-' and '_' to separate words in the model_name, so if I want to split it,
             # I need to filter for both
             embedding_name = embedding_name.split("/")[1]
             embedding_id = embedding_name.split("-")[0].split("_")[0]
@@ -299,11 +303,12 @@ def create_query_engines(llm: str = "gpt-4o-mini",
 
         # apparently, using an external vector store does block some functionality in order to simplify storage
         # this means I cannot directly access the nodes in the docstore which are needed for the BM25
-        # one hacky solution is to just retrieve all nodes with a standard retriever and a high top_k
-        # with context windows of 512 there should be 1203 TextNodes total in the KB.
-        hacky_retriever = index.as_retriever(similarity_top_k=1000)
-        source_nodes = hacky_retriever.retrieve("und")
-        hacky_nodes = [x.node for x in source_nodes]
+        # I'll reuse the code from the service scraper to create the text nodes again
+        scraper = ServiceScraper()
+        hacky_nodes = scraper.ScrapeServicePage(chunk_size=512,
+                                          load_from_disc=True,
+                                          service_path="/media/singularity/Dokumente/Studentenfutter/CogntiveScience/MasterThesis/Code/master_thesis/data_handling/DataStores/service.json",
+                                          contact_path="/media/singularity/Dokumente/Studentenfutter/CogntiveScience/MasterThesis/Code/master_thesis/data_handling/DataStores/contact.json")
 
         bm25 = BM25Retriever.from_defaults(nodes=hacky_nodes, similarity_top_k=retriever_top_k)
         hybrid_retriever = CombinedRetriever([base, bm25], mode="OR")

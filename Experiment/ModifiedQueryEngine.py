@@ -38,7 +38,7 @@ class ModifiedQueryEngine():
 
         if self.use_hyde:
             query_transformed = self.hyde(query_bundle)
-            self.hyde_object = {"Question": query_str, "Generated Document": query_transformed.embedding_strs[0]}  # TODO: check format in which this is stored
+            self.hyde_object = {"Question": query_str, "Generated Document": query_transformed.embedding_strs[0]}
             nodes = self.retriever.retrieve(query_transformed)
         else:
             # I included a flag to only reroute the output for the autoretriever because it otherwise

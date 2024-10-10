@@ -15,7 +15,7 @@ class FusionRetriever(BaseRetriever):
     All questions are used to retrieve nodes from the retriever.
     This should be used in combination with a reranker for the query engine.
     """
-    def __init__(self, retriever, llm: str = "gpt-3.5-turbo"):
+    def __init__(self, retriever, llm: str = "gpt-4o-mini"):
         self.retriever = retriever
         super().__init__()
         self.generated_questions: dict = {}
@@ -26,11 +26,11 @@ class FusionRetriever(BaseRetriever):
         return re.sub(r'^\d+\.\s*', '', s)
 
     def _generate_questions(self, question) -> list:
-        load_dotenv()
-        api_key = os.getenv("OPENAI_API_KEY")
+        # load_dotenv()
+        # api_key = os.getenv("OPENAI_API_KEY")
 
-        #client = OpenAI(api_key=api_key)
-        Settings.llm = OpenAI(model=self.llm, api_key=api_key)
+        # client = OpenAI(api_key=api_key)
+        # Settings.llm = OpenAI(model=self.llm, api_key=api_key)
 
         template = "Du bekommst eine Frage gestellt. Formuliere die Frage auf 5 unterschiedliche Weisen um, ohne dabei den Inhalt der Frage zu ändern. Beanwtorte nicht die Frage sondern gebe nur die neuen Fragen zuück. Die Frage lautet: \n {question}"
 

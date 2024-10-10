@@ -193,13 +193,15 @@ def compare(files: list, order: list, size: list = None, use_all: bool = True, s
     comparisons_id = []
     mrrs = []
     query_times = []
+    generation_times = []
     control_path = "../questions_extended.json"
     for file in files:
         df = pd.read_csv(file, sep=';')
-        id_columns, name_columns = get_columns(df)
+        id_columns, name_columns, _ = get_columns(df)
         ratio_name, comparison_name, _ = compare_nodes(df=df, control_path=control_path, columns=name_columns, type="name", use_all=use_all)
         ratio_id, comparison_id, mrr = compare_nodes(df=df, control_path=control_path, columns=id_columns, type="id", use_all=use_all)
         query_times.append(get_avg_time(df,"query"))
+        generation_times.append(get_avg_time(df, "generation"))
         ratios_name.append(ratio_name)
         comparisons_name.append(comparison_name)
         ratios_id.append(ratio_id)
@@ -212,8 +214,6 @@ def compare(files: list, order: list, size: list = None, use_all: bool = True, s
             #["ratio name"] + ratios_name,
             ["count id"] + [sum(inner_list) for inner_list in comparisons_id],
             ["ratio id"] + ratios_id,
-            ["count name"] + [sum(inner_list) for inner_list in comparisons_name],
-            ["ratio name"] + ratios_name,
             ["MRR"] + mrrs,
             ["Query Time"] + query_times,
             ["Size"] + size,
@@ -224,13 +224,12 @@ def compare(files: list, order: list, size: list = None, use_all: bool = True, s
             #["ratio name"] + ratios_name,
             ["count id"] + [sum(inner_list) for inner_list in comparisons_id],
             ["ratio id"] + ratios_id,
-            ["count name"] + [sum(inner_list) for inner_list in comparisons_name],
-            ["ratio name"] + ratios_name,
             ["MRR"] + mrrs,
-            ["Query Time"] + query_times
+            ["Query Time"] + query_times,
+            ["Generation Time"] + generation_times
         ]
 
-    print(tabulate(data, headers=order,tablefmt="markdown", floatfmt=".2f"))
+    print(tabulate(data, headers=order,tablefmt="latex", floatfmt=".2f"))
     print("\n")
     compare_best_n(3,ratios_id,comparisons_id,order)
 
@@ -238,9 +237,32 @@ def compare(files: list, order: list, size: list = None, use_all: bool = True, s
 def extract_evaluations(df: pd.DataFrame) -> list:
     answer_relevancy = df["Answer_Relevancy_metric_score"]
     faithfulness = df["Faithfulness_metric_success"]
-    contextual_relevancy = df["Contextual_Relevancy_metric_score"]
-    return [answer_relevancy, faithfulness, contextual_relevancy]
+    return [answer_relevancy, faithfulness]
 
+def manual_eval(path: str = "../logs/LLM_manual/llm_manual.JSON"):
+    with open(path, 'r') as file:
+        manual_eval: dict = json.load(file)
+
+    replacement_all_correct = {-2: 0, -1: 0, 2: 1}
+    replacement_language = {-2: 0, -1: 1, 1: 0, 2: 1}
+
+    all_correct_answers = []
+    all_correct_ratio = []
+    language_answers = []
+    language_ratio = []
+    for name, eval in manual_eval.items():
+        modified_correct = [replacement_all_correct.get(item, item) for item in eval]
+        modified_language = [replacement_language.get(item, item) for item in eval]
+        all_correct_answers.append(sum(modified_correct))
+        language_answers.append(sum(modified_language))
+
+    for entry in all_correct_answers:
+        all_correct_ratio.append(entry / 24)
+
+    for entry in language_answers:
+        language_ratio.append(entry / 24)
+
+    return all_correct_answers, all_correct_ratio, language_answers, language_ratio
 
 def reranking_analysis():
     file = "../logs/rerank_experiment_2024-09-28_22-09-37.csv"
@@ -382,13 +404,12 @@ def compare_approaches(location: str, order: list[str] = None, use_all: bool = T
         ]
 
     filenames = get_filtered_and_sorted_filenames(location, order)
-    compare(filenames, order, use_all)
+    compare(files=filenames, order=order, use_all=use_all)
 
 def compare_evaluations(files: list, order: list):
 
     answer_relevancy_scores = []
     faithfulness_scores = []
-    contextual_relevancy_scores = []
     generation_times = []
 
     for file in files:
@@ -396,17 +417,35 @@ def compare_evaluations(files: list, order: list):
         scores = extract_evaluations(df)
         answer_relevancy_scores.append(np.mean(scores[0]))
         faithfulness_scores.append(np.mean(scores[1]))
-        contextual_relevancy_scores.append(np.mean(scores[2]))
         generation_times.append(get_avg_time(df, "generation"))
 
     data = [
         ["Answer Relevancy"] + answer_relevancy_scores,
         ["Faithfulness"] + faithfulness_scores,
-        ["Contextual Relevancy"] + contextual_relevancy_scores,
         ["Generation Time"] + generation_times
     ]
 
-    print(tabulate(data, headers=order, tablefmt="pipe", floatfmt=".2f"))
+    manual_correct, manual_ratio, manual_language, language_ratio = manual_eval()
+
+    tdata = [
+        answer_relevancy_scores,
+        faithfulness_scores,
+        generation_times,
+        manual_correct,
+        manual_ratio,
+        manual_language,
+        language_ratio
+    ]
+
+    # Transpose the data
+    transposed_data = list(zip(*tdata))
+
+    # Convert to a DataFrame for better handling
+    df = pd.DataFrame(transposed_data, columns=["Answer Relevancy", "Faithfullness", "Generation Time", "Manual Eval", "Manual Ratio", "Correct Language", "Language Ratio"], index=order)
+
+    #print(df)
+    # Print the transposed table
+    print(tabulate(df, headers="keys", tablefmt="latex", floatfmt=".2f"))
 
 
 def evaluate_toni():
@@ -456,6 +495,31 @@ def evaluate_toni():
 
         data_logger.write_csv(result)
 
+def analyze_toni():
+    path = "../logs/Toni/Toni_2024_09_13.JSON"
+    with open(path, 'r') as file:
+        toni: dict = json.load(file)
+
+    correctly_answered = 0
+    not_answered = 0
+    incorrectly_answered = 0
+    for entry in toni:
+        if entry["Score"] == 1:
+            correctly_answered += 1
+        elif entry["Score"] == 0:
+            not_answered += 1
+        elif entry["Score"] == -1:
+            incorrectly_answered += 1
+        else:
+            raise ValueError("Score values should be -1, 0 or 1.")
+
+    data = [
+        ["correct"] + [correctly_answered],
+        ["no answer"] + [not_answered],
+        ["unhelpful"] + [incorrectly_answered],
+    ]
+    print(tabulate(data, headers=["Toni"], tablefmt="latex", floatfmt=".0f"))
+
 
 
 def main():
@@ -466,20 +530,30 @@ def main():
                        order=["base", "rerank", "hybrid"])
     compare_approaches(location="../logs/2024-09-10_13-57-57_gpt-4o-mini_text_rerank-multilingual-v3.0_retrieval_only_retriever20_rerank3",
                        order=["agent", "iter-retgen"])
-    compare_evaluations(["../logs/2024-09-12_21-01-39_mistral_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_mistral_text_rerank-multilingual-v3.0_german_prompt_2024-09-12_21-01-39.csv",
-                         "../logs/2024-09-13_09-56-51_mixtral_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_mixtral_text_rerank-multilingual-v3.0_german_prompt_2024-09-13_09-56-51.csv",
-                         "../logs/2024-09-14_00-26-18_command-r-plus_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_command-r-plus_text_rerank-multilingual-v3.0_german_prompt_2024-09-14_00-26-18.csv",
-                         "../logs/2024-09-14_06-53-31_gpt-4o-mini_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_gpt-4o-mini_text_rerank-multilingual-v3.0_german_prompt_2024-09-14_06-53-31.csv",
-                         "../logs/2024-09-14_13-26-02_wiedervereinigung_7b_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_wiedervereinigung_7b_text_rerank-multilingual-v3.0_german_prompt_2024-09-14_13-26-02.csv",
-                         "../logs/2024-09-15_08-03-31_sauerkraut_mixtral_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_sauerkraut_mixtral_text_rerank-multilingual-v3.0_german_prompt_2024-09-15_08-03-31.csv",
-                         ],
-                        ["mistral",
-                         "mixtral",
-                         "Command-R+",
-                         "GPT-4o-mini",
-                         "Wiedervereinigung-7B",
-                         "Sauerkraut_mixtral",
-                         ])
+    compare_evaluations([
+            "../logs/2024-09-13_09-56-51_mixtral_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_mixtral_text_rerank-multilingual-v3.0_german_prompt_2024-09-13_09-56-51.csv",
+            "../logs/2024-09-12_21-01-39_mistral_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_mistral_text_rerank-multilingual-v3.0_german_prompt_2024-09-12_21-01-39.csv",
+            "../logs/2024-09-17_00-51-50_llama31_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_llama31_text_rerank-multilingual-v3.0_german_prompt_2024-09-17_00-51-50.csv",
+            "../logs/2024-09-19_15-14-59_llama31_8b_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_llama31_8b_text_rerank-multilingual-v3.0_german_prompt_2024-09-19_15-14-59.csv",
+            "../logs/2024-09-15_08-03-31_sauerkraut_mixtral_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_sauerkraut_mixtral_text_rerank-multilingual-v3.0_german_prompt_2024-09-15_08-03-31.csv",
+            "../logs/2024-09-14_13-26-02_wiedervereinigung_7b_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_wiedervereinigung_7b_text_rerank-multilingual-v3.0_german_prompt_2024-09-14_13-26-02.csv",
+            "../logs/2024-09-17_14-20-36_sauerkraut_llama31_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_sauerkraut_llama31_text_rerank-multilingual-v3.0_german_prompt_2024-09-17_14-20-36.csv",
+            "../logs/2024-09-16_20-50-09_sauerkraut_llama31_8b_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_sauerkraut_llama31_8b_text_rerank-multilingual-v3.0_german_prompt_2024-09-16_20-50-09.csv",
+            "../logs/2024-09-14_06-53-31_gpt-4o-mini_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_gpt-4o-mini_text_rerank-multilingual-v3.0_german_prompt_2024-09-14_06-53-31.csv",
+            "../logs/2024-09-14_00-26-18_command-r-plus_text_rerank-multilingual-v3.0_german_prompt_retriever20_rerank3/rerank_command-r-plus_text_rerank-multilingual-v3.0_german_prompt_2024-09-14_00-26-18.csv"
+        ],
+        ["mixtral",
+         "mistral",
+         "llama31",
+         "llama31_8b",
+         "sauerkraut_mixtral",
+         "wiedervereinigung-7b",
+         "sauerkraut_llama31",
+         "sauerkraut_llama31_8b",
+         "GPT-4o-mini",
+         "Command-R+"
+         ])
 
 if __name__ == "__main__":
-   reranking_analysis()
+    compare_approaches(location="../logs/2024-10-10_11-57-25_sauerkraut_llama31_8b_text_rerank-multilingual-v3.0_retrieval_only_retriever20_rerank3",
+                       order=["hybrid"])
