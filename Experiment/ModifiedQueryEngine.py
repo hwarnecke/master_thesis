@@ -1,16 +1,15 @@
 from llama_index.core.retrievers import BaseRetriever
 from llama_index.core.response_synthesizers import BaseSynthesizer
-from llama_index.core.postprocessor import SentenceTransformerRerank
 from llama_index.core import QueryBundle
 from llama_index.core.indices.query.query_transform.base import HyDEQueryTransform
 import time, sys
 from io import StringIO
 
 
-class ModifiedQueryEngine():
+class ModifiedQueryEngine:
 
     def __init__(self, retriever: BaseRetriever, response_synthesizer: BaseSynthesizer,
-                 reranker: SentenceTransformerRerank = None, hyde: HyDEQueryTransform = None, reroute_stdout: bool = False):
+                 reranker=None, hyde: HyDEQueryTransform = None, reroute_stdout: bool = False):
 
         self.retriever = retriever
         self.response_synthesizer = response_synthesizer
@@ -24,8 +23,8 @@ class ModifiedQueryEngine():
         self.total_time: float = 0
 
         # for the special cases that store extra information like HyDE, Auto or Fusion
-        self.hyde_object: dict
-        self.verbose_output: dict
+        self.hyde_object: dict = {}
+        self.verbose_output: dict = {}
         self.hyde = hyde
         self.use_hyde: bool = False if hyde is None else True
 
@@ -92,7 +91,7 @@ class ModifiedQueryEngine():
         nodes = self.retriever.retrieve(str_or_query_bundle=query_str)
         query_time = time.time() - start_time
         response_objects: list = []
-        base_response = self.response_synthesizer.synthesize(query_str,nodes)
+        base_response = self.response_synthesizer.synthesize(query_str, nodes)
         response_objects.append(base_response)
         times = [query_time]
         for rerank in reranker:
@@ -104,9 +103,6 @@ class ModifiedQueryEngine():
             times.append(rerank_time)
 
         return response_objects, times
-
-
-
 
     def get_time(self) -> dict[str, float]:
         return {"query_time": self.query_time,

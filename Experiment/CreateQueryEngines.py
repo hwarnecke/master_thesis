@@ -77,7 +77,7 @@ def get_Embedding(type: str, embedding_name: str):
     match type:
         case 'OpenAI':
             openAI_api_key = os.getenv("OPENAI_API_KEY")
-            embedding_model = OpenAIEmbedding(model_name=embedding_name, api_key=openAI_api_key)
+            embedding_model = OpenAIEmbedding(api_key=openAI_api_key, model_name=embedding_name)
             embedding_id = embedding_name.split("-")[0]
         case 'Cohere':
             cohere_api_key = os.getenv("COHERE_API_KEY")
@@ -125,7 +125,7 @@ def get_Reranker(type: str, rerank_model: str, rerank_top_n: int):
             cohere_api_key = os.getenv("COHERE_API_KEY")
             reranker = CohereRerank(api_key=cohere_api_key, top_n=rerank_top_n, model=rerank_model)
         case 'colbert':
-            reranker = ColbertRerank(top_n=rerank_top_n, model=rerank_model, keep_retrieval_score=True)
+            reranker = ColbertRerank(top_n=rerank_top_n, model=rerank_model, keep_retrieval_score=True, device="cpu")
         case 'jina':
             jina_api_key = os.getenv("JINAAI_API_KEY")
             reranker = JinaRerank(api_key=jina_api_key, top_n=rerank_top_n, model=rerank_model)
@@ -255,7 +255,7 @@ def create_query_engines(llm: str = "gpt-4o-mini",
 
     # the llm used
     llm_id = llm
-    if llm == "gpt-40-mini":
+    if llm == "gpt-4o-mini":
         llm_id = "gpt4mini"
     elif llm == "gpt-4-turbo":
         llm_id = "gpt4"

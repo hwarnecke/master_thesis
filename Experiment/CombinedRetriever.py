@@ -14,7 +14,7 @@ class CombinedRetriever(BaseRetriever):
     I left out the type checks but added the possibility to have multiple different retrievers.
     """
 
-    def __init__(self, retrievers, mode = "AND"):
+    def __init__(self, retrievers, mode = "OR"):
         self.retrievers = retrievers
         self.mode = mode
         super().__init__()

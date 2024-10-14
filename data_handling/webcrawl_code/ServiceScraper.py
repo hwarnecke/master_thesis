@@ -204,7 +204,7 @@ class ServiceScraper:
                     a_tag = li.find('a')  # the url is always before the phone number
 
                     # some 'Kontaktpersonen' have their position specified.
-                    # if so, they have to spans instead of one
+                    # if so, they have two spans instead of one
                     if len(spans) == 1:
                         name: str = spans[0].text
                         position: str = None
@@ -239,9 +239,6 @@ class ServiceScraper:
         content = soup.find('div', attrs={'class': 'col-12'}).get_text()
         info = {"text": content}
         metadata: dict = self.__ExtractRelatedServices(soup)
-        # TODO: I could extract more metadata if wanted:
-        #       which 'Einrichtung' a person works for
-        #       which 'Einrichtung' another 'Einrichtung' is connected to
         info.update(metadata)
         return info
 
