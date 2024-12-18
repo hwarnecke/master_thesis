@@ -33,6 +33,7 @@ class ModifiedQueryEngine:
 
     def query(self, query_str: str):
         start_time = time.time()
+        # the hyde implementation needs a QueryBundle but it's basically just a wrapper
         query_bundle = QueryBundle(query_str)
 
         if self.use_hyde:
@@ -69,6 +70,7 @@ class ModifiedQueryEngine:
         query_stop_time = time.time()
         self.query_time = query_stop_time - start_time
 
+        # create response object
         response_obj = self.response_synthesizer.synthesize(query_str, nodes)
 
         generating_stop_time = time.time()
