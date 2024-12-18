@@ -140,7 +140,6 @@ def run_experiment(questions: str = "questions_extended.json",
             query = question["question"]
 
             # cohere API key is limited to 10 calls per minute, so I need to add a delay here if I use it
-            # which also means the time comparisons are off for cohere, but I guess I can just subtract that later
             if rerank_model == "rerank-multilingual-v3.0":
                 time.sleep(7)
 
@@ -157,6 +156,7 @@ def run_experiment(questions: str = "questions_extended.json",
                     print("\t\tRetrying in 3 seconds")
                     time.sleep(3)
 
+            # the agent has a different logging format
             if "agent" in qe_id:
                 agent_nodes = qe.get_nodes()
                 nodes: dict[str, str] = create_agent_log(agent_nodes, ret_top_k=rerank_top_n)
@@ -207,6 +207,13 @@ def run_experiment(questions: str = "questions_extended.json",
 
 
 def create_additional_log(qe_id: str, qe) -> dict[str, any]:
+    """
+    for all retrievers that have additional information that I want to log.
+    If they have none, the dict will stay empty and thus not be logged
+    :param qe_id: the ID of the retriever
+    :param qe: the query engine object
+    :return: the additional information as dict
+    """
     if "fusion" in qe_id:
         add_data: dict = qe.retriever.generated_questions
     elif "hyde" in qe_id:
@@ -249,6 +256,7 @@ def create_metrics() -> list:
 
     answer_relevancy_metric = AnswerRelevancyMetric(model=custom_llm)
     faithfulness_metric = FaithfulnessMetric(model=custom_llm)
+    # contextual relevancy was later excluded since it is not really needed and saves massive amounts of time
     #contextual_relevancy_metric = ContextualRelevancyMetric(model=custom_llm)
     metrics = [answer_relevancy_metric, faithfulness_metric]#, contextual_relevancy_metric]
     return metrics
@@ -443,7 +451,6 @@ def compare_embeddings():
 
 
 def main_experiment():
-    # excluding iterative approaches for now, since I want to pick one of the below as the qe for them
     custom_qa_path = "PromptTemplates/german_qa_template.txt"
     custom_refine_path = "PromptTemplates/german_refine_template.txt"
     run_experiment(custom_qa_path=custom_qa_path,
@@ -518,7 +525,7 @@ def llms():
             time.sleep(3)
 
         stop_time = time.time() - start_time
-        print(f"\nRunning this shit show took {stop_time} seconds.\n")
+        print(f"\nRunning this took {stop_time} seconds.\n")
 
     print(f"{len(failed)} failed llms: {failed}")
 
@@ -540,4 +547,4 @@ if __name__ == "__main__":
     start_time = time.time()
     run_single("hybrid")
     stop_time = time.time() - start_time
-    print(f"\nThis probably took longer than all Frodo scenes in LOTR...: {stop_time}s")
+    print(f"\nFinished in: {stop_time}s")

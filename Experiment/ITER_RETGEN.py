@@ -31,7 +31,6 @@ class ITER_RETGEN:
 
     def query(self, query: str):
         modified_query = query
-        #answer = "Wer das liest ist doof."
         self.additional_log.update({"query": query})
 
         for i in range(self.max_iterations):

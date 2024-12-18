@@ -71,10 +71,14 @@ docker compose down city_service
 
 ## API Key
 
-Since this Experiment mostly uses OpenAI LLMs both for the RAG system as well as the evaluators, an OpenAI API key is needed.
-The key needs to be provided in an .env file under the tag ``OPENAI_API_KEY``.
+Since this Experiment uses OpenAI, Cohere and JinaAI API keys.
+The keys need to be provided in an .env file under the tag ``OPENAI_API_KEY``.
 
+## Ollama
 
+Some Models are run using Ollama.
+Those need to be set up with the proper names before running the experiment.
+If interested, take a look at the Ollama documentation.
 
 # Experiment
 
@@ -83,3 +87,8 @@ The main experiment can be found under `Experiment/main.py`
 It runs a set of questions through different query engines, evaluates them based on deepeval and logs the results.
 
 Different parameter can be specified that handle the LLM, Embedding, questions, prompts, query engines and more.
+
+
+# Analysis
+The scripts regarding data analysis can be found in `Experiment/Analysis/Analsysis.py`.
+

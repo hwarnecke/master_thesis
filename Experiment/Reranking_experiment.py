@@ -9,6 +9,14 @@ from llama_index.vector_stores.elasticsearch import ElasticsearchStore
 import json
 import DataLogging
 
+"""
+The main experiment tests each query engine in isolation. 
+Meaning that if I run multiple rerankers, it will retrieve a new set of documents for each.
+Usually, the same documents are retrieved but differences are possible.
+This spin-off of the main experiment retrieves a single set of documents 
+and then tests all rerankers on the same set.
+"""
+
 
 def reranking_comparison():
     load_dotenv()
