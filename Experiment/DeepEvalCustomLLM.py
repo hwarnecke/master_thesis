@@ -17,4 +17,4 @@ class DeepEvalCustomLLM(DeepEvalBaseLLM):
         return self.generate(prompt)
 
     def get_model_name(self):
-        return "DeepEvalCustomLLM"  # FIXME: If you have time find a way to return an actual name
+        return "DeepEvalCustomLLM"

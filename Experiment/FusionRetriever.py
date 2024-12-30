@@ -9,7 +9,7 @@ from llama_index.core.retrievers import BaseRetriever
 
 class FusionRetriever(BaseRetriever):
     """
-    Implements RAG Fusion approach.
+    Implements modified RAG Fusion approach.
     Takes a retriever to use for the retrieval.
     The query is passed to an LLM tasked to create similar questions.
     All questions are used to retrieve nodes from the retriever.
@@ -23,15 +23,10 @@ class FusionRetriever(BaseRetriever):
         self.llm = llm
 
     def _remove_leading_numbers(self, s) -> str:
+        # GPT tends to add numbers before a list of question, so they need to be removed
         return re.sub(r'^\d+\.\s*', '', s)
 
     def _generate_questions(self, question) -> list:
-        # load_dotenv()
-        # api_key = os.getenv("OPENAI_API_KEY")
-
-        # client = OpenAI(api_key=api_key)
-        # Settings.llm = OpenAI(model=self.llm, api_key=api_key)
-
         template = "Du bekommst eine Frage gestellt. Formuliere die Frage auf 5 unterschiedliche Weisen um, ohne dabei den Inhalt der Frage zu ändern. Beanwtorte nicht die Frage sondern gebe nur die neuen Fragen zuück. Die Frage lautet: \n {question}"
 
         user_input = template.format(question=question)
